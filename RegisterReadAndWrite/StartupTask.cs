@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright ® 2019 May devMobile Software, All Rights Reserved
+    Copyright ® 2019 June devMobile Software, All Rights Reserved
 
 	 MIT License
 
@@ -32,49 +32,40 @@ namespace devMobile.IoT.Rfm69Hcw.RegisterReadAndWrite
 	using Windows.Devices.Spi;
 	using Windows.Devices.Gpio;
 
-	public sealed class Rfm9XDevice
+	public sealed class Rfm69HcwDevice
 	{
-		private SpiDevice Rfm9XLoraModem;
-		private GpioPin ChipSelectGpioPin;
+		private SpiDevice Rfm69Hcw;
 		private const byte RegisterAddressReadMask = 0X7f;
 		private const byte RegisterAddressWriteMask = 0x80;
 
-		public Rfm9XDevice(int chipSelectPin, int resetPin)
+		public Rfm69HcwDevice(int chipSelectPin, int resetPin)
 		{
 			SpiController spiController = SpiController.GetDefaultAsync().AsTask().GetAwaiter().GetResult();
-			var settings = new SpiConnectionSettings(0)
+			var settings = new SpiConnectionSettings(chipSelectPin)
 			{
 				ClockFrequency = 500000,
 				Mode = SpiMode.Mode0,
 			};
 
-			// Chip select pin configuration
-			GpioController gpioController = GpioController.GetDefault();
-			ChipSelectGpioPin = gpioController.OpenPin(chipSelectPin);
-			ChipSelectGpioPin.SetDriveMode(GpioPinDriveMode.Output);
-			ChipSelectGpioPin.Write(GpioPinValue.High);
-
 			// Factory reset pin configuration
+			GpioController gpioController = GpioController.GetDefault();
 			GpioPin resetGpioPin = gpioController.OpenPin(resetPin);
 			resetGpioPin.SetDriveMode(GpioPinDriveMode.Output);
+			resetGpioPin.Write(GpioPinValue.High);
+			Task.Delay(1);
 			resetGpioPin.Write(GpioPinValue.Low);
 			Task.Delay(10);
-			resetGpioPin.Write(GpioPinValue.High);
-			Task.Delay(10);
 
-			Rfm9XLoraModem = spiController.GetDevice(settings);
+			Rfm69Hcw = spiController.GetDevice(settings);
 		}
 
 		public Byte RegisterReadByte(byte address)
 		{
 			byte[] writeBuffer = new byte[] { address &= RegisterAddressReadMask };
 			byte[] readBuffer = new byte[1];
-			Debug.Assert(Rfm9XLoraModem != null);
+			Debug.Assert(Rfm69Hcw != null);
 
-			ChipSelectGpioPin.Write(GpioPinValue.Low);
-			Rfm9XLoraModem.Write(writeBuffer);
-			Rfm9XLoraModem.Read(readBuffer);
-			ChipSelectGpioPin.Write(GpioPinValue.High);
+			Rfm69Hcw.TransferSequential(writeBuffer, readBuffer);
 
 			return readBuffer[0];
 		}
@@ -83,12 +74,9 @@ namespace devMobile.IoT.Rfm69Hcw.RegisterReadAndWrite
 		{
 			byte[] writeBuffer = new byte[] { address &= RegisterAddressReadMask };
 			byte[] readBuffer = new byte[2];
-			Debug.Assert(Rfm9XLoraModem != null);
+			Debug.Assert(Rfm69Hcw != null);
 
-			ChipSelectGpioPin.Write(GpioPinValue.Low);
-			Rfm9XLoraModem.Write(writeBuffer);
-			Rfm9XLoraModem.Read(readBuffer);
-			ChipSelectGpioPin.Write(GpioPinValue.High);
+			Rfm69Hcw.TransferSequential(writeBuffer, readBuffer);
 
 			return (ushort)(readBuffer[1] + (readBuffer[0] << 8));
 		}
@@ -97,12 +85,9 @@ namespace devMobile.IoT.Rfm69Hcw.RegisterReadAndWrite
 		{
 			byte[] writeBuffer = new byte[] { address &= RegisterAddressReadMask };
 			byte[] readBuffer = new byte[length];
-			Debug.Assert(Rfm9XLoraModem != null);
+			Debug.Assert(Rfm69Hcw != null);
 
-			ChipSelectGpioPin.Write(GpioPinValue.Low);
-			Rfm9XLoraModem.Write(writeBuffer);
-			Rfm9XLoraModem.Read(readBuffer);
-			ChipSelectGpioPin.Write(GpioPinValue.High);
+			Rfm69Hcw.TransferSequential(writeBuffer, readBuffer);
 
 			return readBuffer;
 		}
@@ -110,35 +95,29 @@ namespace devMobile.IoT.Rfm69Hcw.RegisterReadAndWrite
 		public void RegisterWriteByte(byte address, byte value)
 		{
 			byte[] writeBuffer = new byte[] { address |= RegisterAddressWriteMask, value };
-			Debug.Assert(Rfm9XLoraModem != null);
+			Debug.Assert(Rfm69Hcw != null);
 
-			ChipSelectGpioPin.Write(GpioPinValue.Low);
-			Rfm9XLoraModem.Write(writeBuffer);
-			ChipSelectGpioPin.Write(GpioPinValue.High);
+			Rfm69Hcw.Write(writeBuffer);
 		}
 
 		public void RegisterWriteWord(byte address, ushort value)
 		{
 			byte[] valueBytes = BitConverter.GetBytes(value);
 			byte[] writeBuffer = new byte[] { address |= RegisterAddressWriteMask, valueBytes[0], valueBytes[1] };
-			Debug.Assert(Rfm9XLoraModem != null);
+			Debug.Assert(Rfm69Hcw != null);
 
-			ChipSelectGpioPin.Write(GpioPinValue.Low);
-			Rfm9XLoraModem.Write(writeBuffer);
-			ChipSelectGpioPin.Write(GpioPinValue.High);
+			Rfm69Hcw.Write(writeBuffer);
 		}
 
 		public void RegisterWrite(byte address, [ReadOnlyArray()] byte[] bytes)
 		{
 			byte[] writeBuffer = new byte[1 + bytes.Length];
-			Debug.Assert(Rfm9XLoraModem != null);
+			Debug.Assert(Rfm69Hcw != null);
 
 			Array.Copy(bytes, 0, writeBuffer, 1, bytes.Length);
 			writeBuffer[0] = address |= RegisterAddressWriteMask;
 
-			ChipSelectGpioPin.Write(GpioPinValue.Low);
-			Rfm9XLoraModem.Write(writeBuffer);
-			ChipSelectGpioPin.Write(GpioPinValue.High);
+			Rfm69Hcw.Write(writeBuffer);
 		}
 
 		public void RegisterDump()
@@ -156,39 +135,32 @@ namespace devMobile.IoT.Rfm69Hcw.RegisterReadAndWrite
 
 	public sealed class StartupTask : IBackgroundTask
 	{
-		private const int ChipSelectLine = 25;
-		private const int ResetLine = 17;
-		private Rfm9XDevice rfm9XDevice = new Rfm9XDevice(ChipSelectLine, ResetLine);
+		private const int ChipSelectLine = 1;
+		private const int ResetLine = 25;
+		private Rfm69HcwDevice rfm69Device = new Rfm69HcwDevice(ChipSelectLine, ResetLine);
+
+		const double RH_RF6M9HCW_FXOSC = 32000000.0;
+		const double RH_RFM69HCW_FSTEP = RH_RF6M9HCW_FXOSC / 524288.0;
 
 		public void Run(IBackgroundTaskInstance taskInstance)
 		{
 			while (true)
 			{
-				rfm9XDevice.RegisterDump();
+				rfm69Device.RegisterDump();
 
-				Debug.Print("Read RegOpMode (read byte)");
-				Byte regOpMode = rfm9XDevice.RegisterReadByte(0x1);
-				Debug.WriteLine("Preamble 0x{0:x2}", regOpMode);
+				Debug.WriteLine("Read RegOpMode (read byte)");
+				Byte regOpMode = rfm69Device.RegisterReadByte(0x1);
+				Debug.WriteLine("Reg OpMode 0x{0:x2}", regOpMode);
 
-				Debug.Print("Set LoRa mode and sleep mode (write byte)");
-				rfm9XDevice.RegisterWriteByte(0x01, 0b10000000); // 
+				byte[] bytes = BitConverter.GetBytes((long)(868000000.0/ RH_RFM69HCW_FSTEP));
 
-				Debug.Print("Read the preamble (read word)");
-				ushort preamble = rfm9XDevice.RegisterReadWord(0x20);
-				Debug.WriteLine("Preamble 0x{0:x2} - Bits {1}", preamble, Convert.ToString(preamble, 2).PadLeft(16, '0'));
+				Debug.WriteLine("Byte Hex 0x{0:x2} 0x{1:x2} 0x{2:x2} 0x{3:x2}", bytes[0], bytes[1], bytes[2], bytes[3]);
 
-				Debug.WriteLine("Set the preamble to 0x80 (write word)");
-				rfm9XDevice.RegisterWriteWord(0x20, 0x80);
+				rfm69Device.RegisterWriteByte(0x07, bytes[2]);
+				rfm69Device.RegisterWriteByte(0x08, bytes[1]);
+				rfm69Device.RegisterWriteByte(0x09, bytes[0]);
 
-				Debug.WriteLine("Read the centre frequency (read byte array)");
-				byte[] frequencyReadBytes = rfm9XDevice.RegisterRead(0x07, 3);
-				Debug.WriteLine("Frequency Msb 0x{0:x2} Mid 0x{1:x2} Lsb 0x{2:x2}", frequencyReadBytes[0], frequencyReadBytes[1], frequencyReadBytes[2]);
-
-				Debug.WriteLine("Set the centre frequency to 916MHz ( write byte array)");
-				byte[] frequencyWriteBytes = { 0xE4, 0xC0, 0x00 };
-				rfm9XDevice.RegisterWrite(0x07, frequencyWriteBytes);
-
-				rfm9XDevice.RegisterDump();
+				rfm69Device.RegisterDump();
 
 				Task.Delay(30000).Wait();
 			}
