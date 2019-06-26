@@ -7,7 +7,7 @@
     <ProjectGuid>{71E15D5A-58C7-4FC3-BC17-9B535E7B7CC9}</ProjectGuid>
     <OutputType>winmdobj</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TransmitBasic</RootNamespace>
+    <RootNamespace>devMobile.IoT.Rfm69Hcw.TransmitBasic</RootNamespace>
     <AssemblyName>TransmitBasic</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
