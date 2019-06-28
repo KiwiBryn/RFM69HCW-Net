@@ -162,10 +162,6 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveBasic
 			rfm69Device.RegisterWriteByte(0x03, 0x34);
 			rfm69Device.RegisterWriteByte(0x04, 0x00);
 
-			// Frequency deviation
-			rfm69Device.RegisterWriteByte(0x05, 0x02);
-			rfm69Device.RegisterWriteByte(0x06, 0x3d);
-
 			// Calculate the frequency accoring to the datasheett
 			byte[] bytes = BitConverter.GetBytes((uint)(915000000.0 / RH_RFM69HCW_FSTEP));
 			Debug.WriteLine("Byte Hex 0x{0:x2} 0x{1:x2} 0x{2:x2} 0x{3:x2}", bytes[0], bytes[1], bytes[2], bytes[3]);
@@ -173,37 +169,23 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveBasic
 			rfm69Device.RegisterWriteByte(0x08, bytes[1]);
 			rfm69Device.RegisterWriteByte(0x09, bytes[0]);
 
-			rfm69Device.RegisterWriteByte(0x12, 0x5);
-
-			rfm69Device.RegisterWriteByte(0x18, 0x88);
-
 			// RegRxBW
 			rfm69Device.RegisterWriteByte(0x19, 0x2a);
-			// RegAfcBw
-			rfm69Device.RegisterWriteByte(0x1A, 0x2a);
-			// RegOokPeak
-			rfm69Device.RegisterWriteByte(0x1B, 0x78);
 
-			// Setup preamble length to 16 (default is 3)
+			// Setup preamble length to 16 (default is 3) RegPreambleMsb RegPreambleLsb
 			rfm69Device.RegisterWriteByte(0x2C, 0x0);
 			rfm69Device.RegisterWriteByte(0x2D, 0x10);
 
-			rfm69Device.RegisterWriteByte(0x25, 0x04);
-			rfm69Device.RegisterWriteByte(0x26, 0xf7);
-
-			// Set the Sync length and byte values SyncOn + 3 custom sync bytes
+			// RegSyncConfig Set the Sync length and byte values SyncOn + 3 custom sync bytes
 			rfm69Device.RegisterWriteByte(0x2e, 0x90);
 
+			// RegSyncValues1 thru RegSyncValues3
 			rfm69Device.RegisterWriteByte(0x2f, 0xAA);
 			rfm69Device.RegisterWriteByte(0x30, 0x2D);
 			rfm69Device.RegisterWriteByte(0x31, 0xD4);
 
-			// RegPacketConfig1 changed for Variable length after 9:00PM vs 10:00PM fail
+			// RegPacketConfig1 Variable length with CRC on
 			rfm69Device.RegisterWriteByte(0x37, 0x90);
-			//rfm69Device.RegisterWriteByte(0x38, 0x40);
-
-			rfm69Device.RegisterWriteByte(0x3C, 0x01);
-			rfm69Device.RegisterWriteByte(0x3D, 0x0);
 
 			rfm69Device.RegisterWriteByte(0x01, 0b00010000); // RegOpMode set ReceiveMode
 
