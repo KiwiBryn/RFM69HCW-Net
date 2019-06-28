@@ -7,7 +7,7 @@
     <ProjectGuid>{A872198D-A706-40BA-8290-B1C7A51A455B}</ProjectGuid>
     <OutputType>winmdobj</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ReceiveBasic</RootNamespace>
+    <RootNamespace>devMobile.IoT.Rfm69Hcw.ReceiveBasic</RootNamespace>
     <AssemblyName>ReceiveBasic</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
