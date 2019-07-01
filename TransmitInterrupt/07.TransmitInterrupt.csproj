@@ -7,7 +7,7 @@
     <ProjectGuid>{148546AC-20FB-4AF0-AC36-569DE2A33CB4}</ProjectGuid>
     <OutputType>winmdobj</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TransmitInterrupt</RootNamespace>
+    <RootNamespace>devMobile.IoT.Rfm69Hcw.TransmitInterrupt</RootNamespace>
     <AssemblyName>TransmitInterrupt</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
