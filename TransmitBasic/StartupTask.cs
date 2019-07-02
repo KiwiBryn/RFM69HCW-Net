@@ -203,8 +203,8 @@ namespace devMobile.IoT.Rfm69Hcw.TransmitBasic
 			{
 				// Standby mode while loading message into FIFO
 				rfm69Device.RegisterWriteByte(0x01, 0b00000100);
-				byte[] messageBuffer = UTF8Encoding.UTF8.GetBytes(" hello world " + DateTime.Now.ToLongTimeString());
-				messageBuffer[0] = (byte)messageBuffer.Length;
+				byte[] messageBuffer = UTF8Encoding.UTF8.GetBytes("hello world " + DateTime.Now.ToLongTimeString());
+				rfm69Device.RegisterWriteByte(0x0, (byte)messageBuffer.Length);
 				rfm69Device.RegisterWrite(0x0, messageBuffer);
 
 				// Transmit mode once FIFO loaded
