@@ -230,7 +230,6 @@ namespace devMobile.IoT.Rfm69Hcw.Encryption
 			// Set the AES key and turn on AES RegPacketConfig2
 			rfm69Device.RegisterWriteByte(0x3D, 0x03);
 
-			/*
 			rfm69Device.RegisterWriteByte(0x3E, 0x00);
 			rfm69Device.RegisterWriteByte(0x3F, 0x01);
 			rfm69Device.RegisterWriteByte(0x40, 0x02);
@@ -247,9 +246,9 @@ namespace devMobile.IoT.Rfm69Hcw.Encryption
 			rfm69Device.RegisterWriteByte(0x4B, 0x0D);
 			rfm69Device.RegisterWriteByte(0x4C, 0x0E);
 			rfm69Device.RegisterWriteByte(0x4D, 0x0F);
-			*/
 			
 			// Clear out the AES key
+			/*
 			rfm69Device.RegisterWriteByte(0x3E, 0x0);
 			rfm69Device.RegisterWriteByte(0x3F, 0x0);
 			rfm69Device.RegisterWriteByte(0x40, 0x0);
@@ -266,7 +265,7 @@ namespace devMobile.IoT.Rfm69Hcw.Encryption
 			rfm69Device.RegisterWriteByte(0x4B, 0x0);
 			rfm69Device.RegisterWriteByte(0x4C, 0x0);
 			rfm69Device.RegisterWriteByte(0x4D, 0x0);
-			
+			*/
 
 			rfm69Device.RegisterDump();
 
