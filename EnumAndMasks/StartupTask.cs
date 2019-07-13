@@ -329,6 +329,20 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		// RegPreambleMsb
 		const ushort PreambleSizeDefault = 0x03;
 
+		// RegSyncConfig
+		const bool SyncOnDefault = true;
+		public enum SyncFifoFileCondition
+		{
+			SyncAddressInterrupt = 0b00000000,
+			FifoFillCondition =    0b01000000
+		}
+		const SyncFifoFileCondition SyncFifoFileConditionDefault = SyncFifoFileCondition.SyncAddressInterrupt;
+		const byte SyncSizeDefault = 4; // Actual size not RegSyncConfigSize
+
+		// RegSyncValue 1 to 8
+		readonly byte[] SyncValuesDefault = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+		const byte SyncToleranceDefault = 0;
+
 		// Hardware configuration support
 		private RegOpModeMode RegOpModeModeCurrent = RegOpModeMode.Sleep;
 		private GpioPin InterruptGpioPin = null;
@@ -386,7 +400,8 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			LnaZin lnaZin = LnaZinDefault, LnaCurrentGain lnaCurrentGain = LnaCurrentGainDefault, LnaGainSelect lnaGainSelect = LnaGainSelectDefault,
 			byte dccFrequency = DccFrequencyDefault, RxBwMant rxBwMant = RxBwMantDefault, byte RxBwExp = RxBwExpDefault,
 			byte dccFreqAfc = DccFreqAfcDefault, byte rxBwMantAfc = RxBwMantAfcDefault, byte bxBwExpAfc = RxBwExpAfcDefault,
-			ushort preambleSize = PreambleSizeDefault
+			ushort preambleSize = PreambleSizeDefault,
+			bool syncOn = SyncOnDefault, SyncFifoFileCondition syncFifoFileCondition = SyncFifoFileConditionDefault, byte syncSize = SyncSizeDefault, byte syncTolerance = SyncToleranceDefault, byte[] syncValues = null
 			)
 		{
 			RegOpModeModeCurrent = modeAfterInitialise;
@@ -399,11 +414,11 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 			// Put the device into sleep mode so registers can be changed
 			SetMode(RegOpModeMode.Sleep);
-			
+
 			// RegDataModul ignored
 
 			// RegBitrateMsb, RegBitrateLsb
-			if( bitRate != BitRateDefault)
+			if (bitRate != BitRateDefault)
 			{
 				byte[] bytes = BitConverter.GetBytes((ushort)bitRate);
 				RegisterManager.WriteByte((byte)Registers.RegBitrateMsb, bytes[1]);
@@ -411,7 +426,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			}
 
 			// RegFdevMsb, RegFdevLsb
-			if( frequencyDeviation != frequencyDeviationDefault)
+			if (frequencyDeviation != frequencyDeviationDefault)
 			{
 				byte[] bytes = BitConverter.GetBytes((ushort)frequencyDeviation);
 				RegisterManager.WriteByte((byte)Registers.RegFdevMsb, bytes[1]);
@@ -429,7 +444,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 			if ((listenModeIdleResolution != ListenModeIdleResolutionDefault) ||
 				 (listenModeRXTime != ListenModeRXTimeDefault) ||
-				 (listenModeCrieria != ListenModeCrieriaDefault ) ||
+				 (listenModeCrieria != ListenModeCrieriaDefault) ||
 				 (listenModeEnd != ListenModeEndDefault))
 			{
 				byte regListen1Value = (byte)listenModeIdleResolution;
@@ -441,19 +456,19 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegListen1, regListen1Value);
 			}
 
-			if ( listenCoefficientIdle != ListenCoefficientIdleDefault)
+			if (listenCoefficientIdle != ListenCoefficientIdleDefault)
 			{
 				RegisterManager.WriteByte((byte)Registers.RegListen2, listenCoefficientIdle);
 			}
 
-			if ( listenCoefficientReceive != ListenCoefficientReceiveDefault)
+			if (listenCoefficientReceive != ListenCoefficientReceiveDefault)
 			{
 				RegisterManager.WriteByte((byte)Registers.RegListen3, listenCoefficientReceive);
 			}
 
-			if ((pa0On != pa0OnDefault) || 
-				 (pa1On != pa1OnDefaut) ||  
-				 (pa2On != pa2OnDefault) || 
+			if ((pa0On != pa0OnDefault) ||
+				 (pa1On != pa1OnDefaut) ||
+				 (pa2On != pa2OnDefault) ||
 				 (outputpower != OutputpowerDefault))
 			{
 				byte regPaLevelValue = outputpower;
@@ -474,7 +489,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			}
 
 			// Set RegOcp if any of the settings not defaults
-			if ((ocpOn != OcpOnDefault) || 
+			if ((ocpOn != OcpOnDefault) ||
 				 (ocpTrim != OcpTrimDefault))
 			{
 				byte regOcpValue = ocpTrim;
@@ -513,9 +528,9 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			}
 
 			// RegAfcBw
-			if (( dccFreqAfc != DccFreqAfcDefault ) ||
-				 ( rxBwMantAfc != RxBwMantAfcDefault ) || 
-				 ( bxBwExpAfc != RxBwExpAfcDefault))
+			if ((dccFreqAfc != DccFreqAfcDefault) ||
+				 (rxBwMantAfc != RxBwMantAfcDefault) ||
+				 (bxBwExpAfc != RxBwExpAfcDefault))
 			{
 				byte regAfcBwValue = dccFreqAfc;
 
@@ -531,6 +546,33 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				byte[] bytes = BitConverter.GetBytes((ushort)preambleSize);
 				RegisterManager.WriteByte((byte)Registers.RegPreambleMsb, bytes[1]);
 				RegisterManager.WriteByte((byte)Registers.RegPreambleLsb, bytes[0]);
+			}
+
+			// RegSyncConfig
+			if ((syncOn != SyncOnDefault) ||
+				 (syncFifoFileCondition != SyncFifoFileConditionDefault) ||
+				 (syncSize != SyncSizeDefault) ||
+				 (syncTolerance != SyncToleranceDefault))
+			{
+				byte regSyncConfigValue= 0b00000000;
+
+				if (syncOn)
+				{
+					regSyncConfigValue |= 0b10000000;
+				}
+	
+				regSyncConfigValue |= (byte)syncFifoFileCondition;
+
+				regSyncConfigValue |= (byte)((syncSize - 1) << 3);
+				regSyncConfigValue |= (byte)syncTolerance;
+
+				RegisterManager.WriteByte((byte)Registers.RegSyncConfig, regSyncConfigValue);
+			}
+
+			// RegSyncValue1 to RegSyncValue8
+			if (syncValues != null)
+			{
+				RegisterManager.Write((byte)Registers.RegSyncValue1, syncValues);
 			}
 
 			// Configure RegOpMode before returning
@@ -580,12 +622,16 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		public void Run(IBackgroundTaskInstance taskInstance)
 		{
+			byte[] syncValues ={0xAA, 0x2D, 0xD4};
+
 			rfm69Device.RegisterDump();
 
-			rfm69Device.Initialise( Rfm69HcwDevice.RegOpModeMode.StandBy,
-											bitRate:Rfm69HcwDevice.BitRate.bps4K8,
-											frequency:915000000.0, frequencyDeviation:0X023d,
-											preambleSize:16
+			rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy,
+											bitRate: Rfm69HcwDevice.BitRate.bps4K8,
+											frequency: 915000000.0, frequencyDeviation: 0X023d,
+											preambleSize: 16,
+											syncSize: 3,
+											syncValues: syncValues
 											);
 
 			rfm69Device.RegisterDump();
@@ -595,14 +641,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 			// RegDioMapping1
 			rfm69Device.RegisterManager.WriteByte(0x26, 0x01);
-
-			// RegSyncConfig Set the Sync length and byte values SyncOn + 3 custom sync bytes
-			rfm69Device.RegisterManager.WriteByte(0x2e, 0x90);
-
-			// RegSyncValues1 thru RegSyncValues3
-			rfm69Device.RegisterManager.WriteByte(0x2f, 0xAA);
-			rfm69Device.RegisterManager.WriteByte(0x30, 0x2D);
-			rfm69Device.RegisterManager.WriteByte(0x31, 0xD4);
 
 			// RegPacketConfig1 Variable length with CRC on
 			rfm69Device.RegisterManager.WriteByte(0x37, 0x90);
