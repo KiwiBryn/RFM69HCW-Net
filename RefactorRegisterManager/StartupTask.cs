@@ -112,10 +112,6 @@ namespace devMobile.IoT.Rfm69Hcw.RefactorRegisterManager
 			// regOpMode standby
 			rfm69Device.RegisterManager.WriteByte(0x01, 0b00000100);
 
-			// BitRate MSB/LSB
-			rfm69Device.RegisterManager.WriteByte(0x03, 0x34);
-			rfm69Device.RegisterManager.WriteByte(0x04, 0x00);
-
 			// Frequency deviation
 			rfm69Device.RegisterManager.WriteByte(0x05, 0x02);
 			rfm69Device.RegisterManager.WriteByte(0x06, 0x3d);
@@ -164,7 +160,7 @@ namespace devMobile.IoT.Rfm69Hcw.RefactorRegisterManager
 
 				Debug.WriteLine("{0:HH:mm:ss.fff} Send-Done", DateTime.Now);
 
-				Task.Delay(1000).Wait();
+				Task.Delay(5000).Wait();
 			}
 		}
 	}
