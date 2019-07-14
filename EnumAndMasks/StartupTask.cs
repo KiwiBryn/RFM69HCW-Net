@@ -343,8 +343,58 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		readonly byte[] SyncValuesDefault = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 		const byte SyncToleranceDefault = 0;
 
+		// RegPacketConfig1
+		public enum RegPacketConfig1PacketFormat : byte
+		{
+			FixedLength = 0b00000000,
+			VariableLength = 0b10000000
+		}
+		const RegPacketConfig1PacketFormat RegPacketConfig1PacketFormatDefault = RegPacketConfig1PacketFormat.FixedLength;
+
+		public enum RegPacketConfig1DcFree : byte
+		{
+			None = 0b00000000,
+			Manchester = 0b00100000,
+			Whitening = 0b0100000,
+			Reserved = 0b01100000,
+		}
+		const RegPacketConfig1DcFree RegPacketConfig1DcFreeDefault = RegPacketConfig1DcFree.None;
+
+		private enum RegPacketConfig1Crc : byte
+		{
+			Off = 0b00000000,
+			On = 0b00010000,
+		}
+		const bool PacketCrcOnDefault = false;
+
+		private enum RegPacketConfig1CrcAutoClearOff : byte
+		{
+			ClearFifo = 0b00000000,
+			DoNotClearFifo = 0b00001000,
+		}
+		const bool PacketCrcAutoClearOffDefault = false;
+
+		public enum RegPacketConfig1CrcAddressFiltering : byte
+		{
+			None = 0b00000000,
+			NodeAddress = 0b00000010,
+			NodeAddresOrBroadcastAddress = 0b00000100,
+			Reserved = 0b00000110
+		}
+		const RegPacketConfig1CrcAddressFiltering PacketAddressFilteringDefault = RegPacketConfig1CrcAddressFiltering.None;
+
+		// RegPayloadLength
+		const byte PayloadLengthDefault = 0x40;
+
+		// RegNodeAdrs
+		const byte NodeAddressDefault = 0x0;
+
+		// RegBroadcastAdrs
+		const byte BroadcastAddressDefault = 0x0;
+
 		// Hardware configuration support
 		private RegOpModeMode RegOpModeModeCurrent = RegOpModeMode.Sleep;
+		private RegPacketConfig1PacketFormat PacketFormat = RegPacketConfig1PacketFormatDefault;
 		private GpioPin InterruptGpioPin = null;
 		private GpioPin ResetGpioPin = null;
 		public RegisterManager RegisterManager = null; // Future refactor this will be made private
@@ -401,10 +451,18 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			byte dccFrequency = DccFrequencyDefault, RxBwMant rxBwMant = RxBwMantDefault, byte RxBwExp = RxBwExpDefault,
 			byte dccFreqAfc = DccFreqAfcDefault, byte rxBwMantAfc = RxBwMantAfcDefault, byte bxBwExpAfc = RxBwExpAfcDefault,
 			ushort preambleSize = PreambleSizeDefault,
-			bool syncOn = SyncOnDefault, SyncFifoFileCondition syncFifoFileCondition = SyncFifoFileConditionDefault, byte syncSize = SyncSizeDefault, byte syncTolerance = SyncToleranceDefault, byte[] syncValues = null
+			bool syncOn = SyncOnDefault, SyncFifoFileCondition syncFifoFileCondition = SyncFifoFileConditionDefault, byte syncSize = SyncSizeDefault, byte syncTolerance = SyncToleranceDefault, byte[] syncValues = null,
+			RegPacketConfig1PacketFormat packetFormat = RegPacketConfig1PacketFormat.FixedLength,
+			RegPacketConfig1DcFree packetDcFree = RegPacketConfig1DcFreeDefault,
+			bool packetCrc = PacketCrcOnDefault,
+			bool packetCrcAutoClearOff = PacketCrcAutoClearOffDefault,
+			RegPacketConfig1CrcAddressFiltering packetAddressFiltering = PacketAddressFilteringDefault,
+			byte payloadLength = PayloadLengthDefault,
+			byte addressNode = NodeAddressDefault, byte addressbroadcast = BroadcastAddressDefault
 			)
 		{
 			RegOpModeModeCurrent = modeAfterInitialise;
+			PacketFormat = packetFormat;
 
 			// Strobe Reset pin briefly to factory reset SX1231 chip
 			ResetGpioPin.Write(GpioPinValue.High);
@@ -519,12 +577,12 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				 (rxBwMant != RxBwMantDefault) ||
 				 (RxBwExp != RxBwExpDefault))
 			{
-				byte RegRxBwValue = (byte)DccFrequencyDefault;
+				byte regRxBwValue = (byte)(dccFrequency<<5);
 
-				RegRxBwValue |= (byte)RxBwMantDefault;
-				RegRxBwValue |= RxBwExpDefault;
+				regRxBwValue |= (byte)rxBwMant;
+				regRxBwValue |= RxBwExp;
 
-				RegisterManager.WriteByte((byte)Registers.RegRxBw, RegRxBwValue);
+				RegisterManager.WriteByte((byte)Registers.RegRxBw, regRxBwValue);
 			}
 
 			// RegAfcBw
@@ -575,6 +633,65 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.Write((byte)Registers.RegSyncValue1, syncValues);
 			}
 
+			// RegPacketConfig
+			if ((packetFormat != RegPacketConfig1PacketFormatDefault) ||
+				 (packetDcFree != RegPacketConfig1DcFreeDefault) ||
+				 (packetCrc != PacketCrcOnDefault) ||
+			    (packetCrcAutoClearOff != PacketCrcAutoClearOffDefault) ||
+				 (packetAddressFiltering != PacketAddressFilteringDefault))
+			{
+				byte packetConfig1Value = (byte)packetFormat;
+
+				packetConfig1Value |= (byte)packetDcFree;
+
+				if (packetCrc)
+				{
+					packetConfig1Value |= (byte)RegPacketConfig1Crc.On;
+				}
+				else
+				{
+					packetConfig1Value |= (byte)RegPacketConfig1Crc.Off;
+				}
+
+				if (packetCrcAutoClearOff)
+				{
+					packetConfig1Value |= (byte)RegPacketConfig1CrcAutoClearOff.DoNotClearFifo;
+				}
+				else
+				{
+					packetConfig1Value |= (byte)RegPacketConfig1CrcAutoClearOff.ClearFifo;
+				}
+				packetConfig1Value |= (byte)packetAddressFiltering;
+
+				RegisterManager.WriteByte((byte)Registers.RegPacketConfig1, packetConfig1Value);
+			}
+
+			// RegPayloadLength
+			if ( payloadLength != PayloadLengthDefault)
+			{
+				RegisterManager.WriteByte((byte)Registers.RegPayloadLength, payloadLength);
+			}
+
+			// RegNodeAdrs
+			if (addressNode != NodeAddressDefault)
+			{
+				RegisterManager.WriteByte((byte)Registers.RegNodeAdrs, addressNode);
+			}
+
+			// RegBroadcastAdrs
+			if ( addressbroadcast != BroadcastAddressDefault)
+			{
+				RegisterManager.WriteByte((byte)Registers.RegBroadcastAdrs, addressbroadcast);
+			}
+
+			// RegAutoMode ignored
+
+			// RegFifoThresh
+
+			// RegPacketConfig2
+
+			// RegAesKey1 through RegAesKey16
+
 			// Configure RegOpMode before returning
 			SetMode(modeAfterInitialise);
 		}
@@ -611,6 +728,42 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				Debug.WriteLine("{0:HH:mm:ss.fff} Transmit-Done", DateTime.Now);
 			}
 		}
+
+		public void SendMessage(byte[] messageBytes)
+		{
+			SetMode(RegOpModeMode.StandBy);
+
+			if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
+			{
+				RegisterManager.WriteByte(0x0, (byte)messageBytes.Length);
+			}
+
+			foreach (byte b in messageBytes)
+			{
+				this.RegisterManager.WriteByte((byte)Registers.RegFifo, b);
+			}
+
+			SetMode(RegOpModeMode.Transmit);
+		}
+
+		public void SendMessage(byte address, byte[] messageBytes)
+		{
+			SetMode(RegOpModeMode.StandBy);
+
+			if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
+			{
+				RegisterManager.WriteByte(0x0, (byte)(messageBytes.Length+1));
+			}
+
+			RegisterManager.WriteByte(0x0, address);
+
+			foreach (byte b in messageBytes)
+			{
+				this.RegisterManager.WriteByte((byte)Registers.RegFifo, b);
+			}
+
+			SetMode(RegOpModeMode.Transmit);
+		}
 	}
 
 
@@ -629,35 +782,26 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy,
 											bitRate: Rfm69HcwDevice.BitRate.bps4K8,
 											frequency: 915000000.0, frequencyDeviation: 0X023d,
+											dccFrequency: 0x1,rxBwMant: Rfm69HcwDevice.RxBwMant.RxBwMant20, RxBwExp:0x2,
 											preambleSize: 16,
 											syncSize: 3,
-											syncValues: syncValues
+											syncValues: syncValues,
+											packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
+											packetCrc:true
 											);
 
 			rfm69Device.RegisterDump();
 
-			// RegRxBW
-			rfm69Device.RegisterManager.WriteByte(0x19, 0x2a);
-
 			// RegDioMapping1
 			rfm69Device.RegisterManager.WriteByte(0x26, 0x01);
-
-			// RegPacketConfig1 Variable length with CRC on
-			rfm69Device.RegisterManager.WriteByte(0x37, 0x90);
 
 			rfm69Device.RegisterDump();
 
 			while (true)
 			{
-				// Standby mode while loading message into FIFO
-				rfm69Device.RegisterManager.WriteByte(0x01, 0b00000100);
-
 				byte[] messageBuffer = UTF8Encoding.UTF8.GetBytes("hello world " + DateTime.Now.ToLongTimeString());
-				rfm69Device.RegisterManager.WriteByte(0x0, (byte)messageBuffer.Length);
-				rfm69Device.RegisterManager.Write(0x0, messageBuffer);
 
-				// Transmit mode once FIFO loaded
-				rfm69Device.RegisterManager.WriteByte(0x01, 0b00001100);
+				rfm69Device.SendMessage(messageBuffer);
 
 				Debug.WriteLine("{0:HH:mm:ss.fff} Send-Done", DateTime.Now);
 
