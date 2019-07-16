@@ -392,6 +392,43 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		// RegBroadcastAdrs
 		const byte BroadcastAddressDefault = 0x0;
 
+		// RegFifoThresh
+		[Flags]
+		public enum TxStartCondition:byte
+		{
+			FifoLevel = 0b00000000,
+			FifoNotEmpty = 0b10000000,
+		};
+		const TxStartCondition TxStartConditionDefault = TxStartCondition.FifoNotEmpty;
+
+		const byte FifoThresholdDefault = 0b00001111;
+
+
+		// RegPacketConfig2
+		const byte InterPacketRxDelayDefault = 0;
+		const bool RestartRxDefault = false;
+		[Flags]
+		private enum RegPacketConfig2RestartRxDefault : byte
+		{
+			Off = 0b00000000,
+			On = 0b00000100,
+		}
+
+		const bool AutoRestartRxDefault = true;
+		[Flags]
+		private enum RegPacketConfig2AutoRestartRxDefault : byte
+		{
+			Off = 0b00000000,
+			On = 0b00000010,
+		}
+
+		[Flags]
+		private enum RegPacketConfig2Aes : byte
+		{
+			Off = 0b00000000,
+			On = 0b00000001,
+		}
+
 		// Hardware configuration support
 		private RegOpModeMode RegOpModeModeCurrent = RegOpModeMode.Sleep;
 		private RegPacketConfig1PacketFormat PacketFormat = RegPacketConfig1PacketFormatDefault;
@@ -458,7 +495,10 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			bool packetCrcAutoClearOff = PacketCrcAutoClearOffDefault,
 			RegPacketConfig1CrcAddressFiltering packetAddressFiltering = PacketAddressFilteringDefault,
 			byte payloadLength = PayloadLengthDefault,
-			byte addressNode = NodeAddressDefault, byte addressbroadcast = BroadcastAddressDefault
+			byte addressNode = NodeAddressDefault, byte addressbroadcast = BroadcastAddressDefault,
+			TxStartCondition txStartCondition = TxStartConditionDefault, byte fifoThreshold = FifoThresholdDefault,
+			byte interPacketRxDelay = InterPacketRxDelayDefault, bool restartRx = RestartRxDefault, bool autoRestartRx = AutoRestartRxDefault,
+			byte[] aesKey = null
 			)
 		{
 			RegOpModeModeCurrent = modeAfterInitialise;
@@ -687,10 +727,56 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			// RegAutoMode ignored
 
 			// RegFifoThresh
+			if (( txStartCondition != TxStartConditionDefault) ||(fifoThreshold != FifoThresholdDefault))
+			{
+				byte regFifoThreshValue = (byte)txStartCondition;
+
+				regFifoThreshValue |= fifoThreshold;
+
+				RegisterManager.WriteByte((byte)Registers.RegFifoThresh, regFifoThreshValue);
+			}
 
 			// RegPacketConfig2
+			if ((interPacketRxDelay != InterPacketRxDelayDefault ) || ( restartRx != RestartRxDefault ) || (autoRestartRx != AutoRestartRxDefault) || ( aesKey != null))
+			{
+				byte packetConfig2Value = (byte)interPacketRxDelay;
+
+				if (restartRx)
+				{
+					packetConfig2Value |= (byte)RegPacketConfig2RestartRxDefault.On;
+				}
+				else
+				{
+					packetConfig2Value |= (byte)RegPacketConfig2RestartRxDefault.Off;
+				}
+
+				if (autoRestartRx)
+				{
+					packetConfig2Value |= (byte)RegPacketConfig2AutoRestartRxDefault.On;
+				}
+				else
+				{
+					packetConfig2Value |= (byte)RegPacketConfig2AutoRestartRxDefault.Off;
+				}
+
+				
+				if (aesKey!=null)
+				{
+					packetConfig2Value |= (byte)RegPacketConfig2Aes.On;
+				}
+				else
+				{
+					packetConfig2Value |= (byte)RegPacketConfig2Aes.Off;
+				}
+				
+				RegisterManager.WriteByte((byte)Registers.RegPacketConfig2, packetConfig2Value);
+			}
 
 			// RegAesKey1 through RegAesKey16
+			if (aesKey!=null)
+			{
+				RegisterManager.Write((byte)Registers.RegAesKey1, aesKey);
+			}
 
 			// Configure RegOpMode before returning
 			SetMode(modeAfterInitialise);
@@ -776,6 +862,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		public void Run(IBackgroundTaskInstance taskInstance)
 		{
 			byte[] syncValues ={0xAA, 0x2D, 0xD4};
+			byte[] aesKeyValues = {0x0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0X0E, 0X0F };
 
 			rfm69Device.RegisterDump();
 
@@ -787,7 +874,8 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 											syncSize: 3,
 											syncValues: syncValues,
 											packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
-											packetCrc:true
+											packetCrc:true,
+											aesKey: aesKeyValues
 											);
 
 			rfm69Device.RegisterDump();
