@@ -340,7 +340,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		const byte SyncSizeDefault = 4; // Actual size not RegSyncConfigSize
 
 		// RegSyncValue 1 to 8
-		readonly byte[] SyncValuesDefault = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+ 		readonly byte[] SyncValuesDefault = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 		const byte SyncToleranceDefault = 0;
 
 		// RegPacketConfig1
@@ -405,8 +405,11 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 
 		// RegPacketConfig2
-		const byte InterPacketRxDelayDefault = 0;
-		const bool RestartRxDefault = false;
+		private const byte InterPacketRxDelayDefault = 0;
+		public const byte InterPacketRxDelayMinimum = 0x0;
+		public const byte InterPacketRxDelayMaximum = 0xF;
+
+		private const bool RestartRxDefault = false;
 		[Flags]
 		private enum RegPacketConfig2RestartRxDefault : byte
 		{
@@ -414,7 +417,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			On = 0b00000100,
 		}
 
-		const bool AutoRestartRxDefault = true;
+		private const bool AutoRestartRxDefault = true;
 		[Flags]
 		private enum RegPacketConfig2AutoRestartRxDefault : byte
 		{
@@ -428,6 +431,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			Off = 0b00000000,
 			On = 0b00000001,
 		}
+		public const byte AesKeyLength = 16;
 
 		// Hardware configuration support
 		private RegOpModeMode RegOpModeModeCurrent = RegOpModeMode.Sleep;
@@ -503,6 +507,17 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		{
 			RegOpModeModeCurrent = modeAfterInitialise;
 			PacketFormat = packetFormat;
+
+			#region Guard Conditions
+			if ((interPacketRxDelay < InterPacketRxDelayMinimum ) || (interPacketRxDelay > InterPacketRxDelayMaximum))
+			{
+				throw new ArgumentException($"The interPacketRxDelay must be between {InterPacketRxDelayMinimum} and {InterPacketRxDelayMaximum}", "interPacketRxDelay");
+			}
+			if ((aesKey != null) && (aesKey.Length != AesKeyLength))
+			{
+				throw new ArgumentException($"The AES key must be {AesKeyLength} bytes", "aesKey");
+			}
+			#endregion
 
 			// Strobe Reset pin briefly to factory reset SX1231 chip
 			ResetGpioPin.Write(GpioPinValue.High);
@@ -658,7 +673,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				{
 					regSyncConfigValue |= 0b10000000;
 				}
-	
+
 				regSyncConfigValue |= (byte)syncFifoFileCondition;
 
 				regSyncConfigValue |= (byte)((syncSize - 1) << 3);
@@ -759,7 +774,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 					packetConfig2Value |= (byte)RegPacketConfig2AutoRestartRxDefault.Off;
 				}
 
-				
 				if (aesKey!=null)
 				{
 					packetConfig2Value |= (byte)RegPacketConfig2Aes.On;
@@ -866,34 +880,44 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 			rfm69Device.RegisterDump();
 
-			rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy,
-											bitRate: Rfm69HcwDevice.BitRate.bps4K8,
-											frequency: 915000000.0, frequencyDeviation: 0X023d,
-											dccFrequency: 0x1,rxBwMant: Rfm69HcwDevice.RxBwMant.RxBwMant20, RxBwExp:0x2,
-											preambleSize: 16,
-											syncSize: 3,
-											syncValues: syncValues,
-											packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
-											packetCrc:true,
-											aesKey: aesKeyValues
-											);
-
-			rfm69Device.RegisterDump();
-
-			// RegDioMapping1
-			rfm69Device.RegisterManager.WriteByte(0x26, 0x01);
-
-			rfm69Device.RegisterDump();
-
-			while (true)
+			try
 			{
-				byte[] messageBuffer = UTF8Encoding.UTF8.GetBytes("hello world " + DateTime.Now.ToLongTimeString());
+				rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy,
+												bitRate: Rfm69HcwDevice.BitRate.bps4K8,
+												frequency: 915000000.0, frequencyDeviation: 0X023d,
+												dccFrequency: 0x1,rxBwMant: Rfm69HcwDevice.RxBwMant.RxBwMant20, RxBwExp:0x2,
+												preambleSize: 16,
+												syncSize: 3,
+												syncValues: syncValues,
+												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
+												packetCrc:true,
+												aesKey: aesKeyValues
+												);
 
-				rfm69Device.SendMessage(messageBuffer);
+				rfm69Device.RegisterDump();
 
-				Debug.WriteLine("{0:HH:mm:ss.fff} Send-Done", DateTime.Now);
+				// RegDioMapping1
+				rfm69Device.RegisterManager.WriteByte(0x26, 0x01);
 
-				Task.Delay(5000).Wait();
+				rfm69Device.RegisterDump();
+
+				while (true)
+				{
+					string message = "hello world " + DateTime.Now.ToLongTimeString();
+
+					byte[] messageBuffer = UTF8Encoding.UTF8.GetBytes(message);
+
+					Debug.WriteLine("{0:HH:mm:ss.fff} Send-{1}", DateTime.Now, message);
+					rfm69Device.SendMessage(messageBuffer);
+
+					Debug.WriteLine("{0:HH:mm:ss.fff} Send-Done", DateTime.Now);
+
+					Task.Delay(5000).Wait();
+				}
+			}
+			catch( Exception ex)
+			{
+				Debug.WriteLine(ex.Message);
 			}
 		}
 	}
