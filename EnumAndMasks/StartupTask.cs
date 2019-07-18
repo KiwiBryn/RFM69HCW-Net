@@ -329,19 +329,30 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		// RegPreambleMsb
 		const ushort PreambleSizeDefault = 0x03;
 
-		// RegSyncConfig
-		const bool SyncOnDefault = true;
-		public enum SyncFifoFileCondition
+		// RegSyncConfig 
+		// This is private because default ignored and flag set based on SyncValues parameter being specified rather than default
+		private enum RegSyncConfigSyncOn
+		{
+			Off = 0b00000000,
+			On = 0b10000000
+		}
+
+		public enum RegSyncConfigFifoFileCondition
 		{
 			SyncAddressInterrupt = 0b00000000,
 			FifoFillCondition =    0b01000000
 		}
-		const SyncFifoFileCondition SyncFifoFileConditionDefault = SyncFifoFileCondition.SyncAddressInterrupt;
-		const byte SyncSizeDefault = 4; // Actual size not RegSyncConfigSize
 
-		// RegSyncValue 1 to 8
- 		readonly byte[] SyncValuesDefault = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
-		const byte SyncToleranceDefault = 0;
+		private const RegSyncConfigFifoFileCondition SyncFifoFileConditionDefault = RegSyncConfigFifoFileCondition.SyncAddressInterrupt;
+		public readonly byte[] SyncValuesDefault = {0x01, 0x01, 0x01, 0x01};
+		public const byte SyncValuesSizeDefault = 4;
+		public const byte SyncValuesSizeMinimum = 1;
+		public const byte SyncValuesSizeMaximum = 8;
+
+		private const byte SyncToleranceDefault = 0;
+		public const byte SyncToleranceMinimum = 0;
+		public const byte SyncToleranceMaximum = 7;
+
 
 		// RegPacketConfig1
 		public enum RegPacketConfig1PacketFormat : byte
@@ -492,7 +503,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			byte dccFrequency = DccFrequencyDefault, RxBwMant rxBwMant = RxBwMantDefault, byte RxBwExp = RxBwExpDefault,
 			byte dccFreqAfc = DccFreqAfcDefault, byte rxBwMantAfc = RxBwMantAfcDefault, byte bxBwExpAfc = RxBwExpAfcDefault,
 			ushort preambleSize = PreambleSizeDefault,
-			bool syncOn = SyncOnDefault, SyncFifoFileCondition syncFifoFileCondition = SyncFifoFileConditionDefault, byte syncSize = SyncSizeDefault, byte syncTolerance = SyncToleranceDefault, byte[] syncValues = null,
+			RegSyncConfigFifoFileCondition? syncFifoFileCondition = null, byte? syncTolerance = null, byte[] syncValues = null,
 			RegPacketConfig1PacketFormat packetFormat = RegPacketConfig1PacketFormat.FixedLength,
 			RegPacketConfig1DcFree packetDcFree = RegPacketConfig1DcFreeDefault,
 			bool packetCrc = PacketCrcOnDefault,
@@ -508,7 +519,38 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			RegOpModeModeCurrent = modeAfterInitialise;
 			PacketFormat = packetFormat;
 
-			#region Guard Conditions
+			#region RegSyncConfig + RegSyncValue1 to RegSyncValue8 guard conditions
+			if (syncValues != null)
+			{
+				// If sync enabled (i.e. SyncValues array provided) check that SyncValues not to short/long and SyncTolerance not to small/big
+				if ((syncValues.Length < SyncValuesSizeMinimum) || (syncValues.Length > SyncValuesSizeMaximum))
+				{
+					throw new ArgumentException($"The syncValues array length must be between {SyncValuesSizeMinimum} and {SyncValuesSizeMaximum} bytes", "syncValues");
+				}
+				if (syncTolerance.HasValue)
+				{
+					if ((syncTolerance < SyncToleranceMinimum) || (syncTolerance > SyncToleranceMaximum))
+					{
+						throw new ArgumentException($"The syncTolerance size must be between {SyncToleranceMinimum} and {SyncToleranceMaximum}", "syncTolerance");
+					}
+				}
+			}
+			else
+			{
+				// If sync not enabled (i.e. SyncValues array null) check that no syncFifoFileCondition or syncTolerance configuration specified
+				if (syncFifoFileCondition.HasValue)
+				{
+					throw new ArgumentException($"If Sync not enabled syncFifoFileCondition is not supported", "syncFifoFileCondition");
+				}
+
+				if (syncTolerance.HasValue)
+				{
+					throw new ArgumentException($"If Sync not enabled SyncTolerance is not supported", "syncTolerance");
+				}
+			}
+			#endregion
+
+			#region RegPacketConfig2 + RegAesKey1 to RegAesKey16 guard conditions
 			if ((interPacketRxDelay < InterPacketRxDelayMinimum ) || (interPacketRxDelay > InterPacketRxDelayMaximum))
 			{
 				throw new ArgumentException($"The interPacketRxDelay must be between {InterPacketRxDelayMinimum} and {InterPacketRxDelayMaximum}", "interPacketRxDelay");
@@ -661,23 +703,29 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegPreambleLsb, bytes[0]);
 			}
 
-			// RegSyncConfig
-			if ((syncOn != SyncOnDefault) ||
-				 (syncFifoFileCondition != SyncFifoFileConditionDefault) ||
-				 (syncSize != SyncSizeDefault) ||
-				 (syncTolerance != SyncToleranceDefault))
+			// RegSyncConfig - This one is a little bit different to others as sync normally on by default, now turned on if SyncValues specified
+			byte regSyncConfigValue;
+			if (syncValues != null)
 			{
-				byte regSyncConfigValue= 0b00000000;
-
-				if (syncOn)
+				regSyncConfigValue = (byte)RegSyncConfigSyncOn.On;
+				regSyncConfigValue |= (byte)((syncValues.Length - 1) << 3);
+				if (syncFifoFileCondition.HasValue)
 				{
-					regSyncConfigValue |= 0b10000000;
+					regSyncConfigValue |= (byte)syncFifoFileCondition;
+				}
+				else
+				{
+					regSyncConfigValue |= (byte)SyncFifoFileConditionDefault;
 				}
 
-				regSyncConfigValue |= (byte)syncFifoFileCondition;
-
-				regSyncConfigValue |= (byte)((syncSize - 1) << 3);
-				regSyncConfigValue |= (byte)syncTolerance;
+				if (syncTolerance.HasValue)
+				{
+					regSyncConfigValue |= syncTolerance.Value;
+				}
+				else
+				{
+					regSyncConfigValue |= SyncToleranceDefault;
+				}
 
 				RegisterManager.WriteByte((byte)Registers.RegSyncConfig, regSyncConfigValue);
 			}
@@ -887,7 +935,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 												frequency: 915000000.0, frequencyDeviation: 0X023d,
 												dccFrequency: 0x1,rxBwMant: Rfm69HcwDevice.RxBwMant.RxBwMant20, RxBwExp:0x2,
 												preambleSize: 16,
-												syncSize: 3,
 												syncValues: syncValues,
 												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
 												packetCrc:true,
