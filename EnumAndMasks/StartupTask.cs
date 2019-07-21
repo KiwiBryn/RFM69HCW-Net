@@ -376,7 +376,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			Off = 0b00000000,
 			On = 0b00010000,
 		}
-		const bool PacketCrcOnDefault = false;
+		const bool PacketCrcOnDefault = true;
 
 		private enum RegPacketConfig1CrcAutoClearOff : byte
 		{
@@ -991,12 +991,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 												preambleSize: 16,
 												syncValues: syncValues,
 												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
-												packetCrc:true,
-												aesKey: aesKeyValues
+												addressNode: 0x66,
+												addressbroadcast: 0x99//,
+												//aesKey: aesKeyValues
 												);
 
 				rfm69Device.RegisterDump();
-
+				
 				// RegDioMapping1
 				rfm69Device.RegisterManager.WriteByte(0x26, 0x00);
 
@@ -1036,18 +1037,25 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		private void InterruptGpioPin1_ValueChanged(GpioPin sender, GpioPinValueChangedEventArgs args)
 		{
 			Debug.WriteLine("InterruptGpioPin1_ValueChanged");
-			rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Sleep);
-			rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
+
+			rfm69Device.RegisterDump();
 		}
 
 		private void InterruptGpioPin2_ValueChanged(GpioPin sender, GpioPinValueChangedEventArgs args)
 		{
 			Debug.WriteLine("InterruptGpioPin2_ValueChanged");
+
+			rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Sleep);
+			rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 		}
 
 		private void InterruptGpioPin3_ValueChanged(GpioPin sender, GpioPinValueChangedEventArgs args)
 		{
 			Debug.WriteLine("InterruptGpioPin3_ValueChanged");
+
+			byte regpacketConfig2 = rfm69Device.RegisterManager.ReadByte(0x3d);
+			regpacketConfig2 |= (byte)0x04;
+			rfm69Device.RegisterManager.WriteByte(0x3d, regpacketConfig2);
 		}
 	}
 }
