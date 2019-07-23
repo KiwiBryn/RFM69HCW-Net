@@ -420,9 +420,8 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		public const byte InterPacketRxDelayMinimum = 0x0;
 		public const byte InterPacketRxDelayMaximum = 0xF;
 
-		private const bool RestartRxDefault = false;
 		[Flags]
-		private enum RegPacketConfig2RestartRxDefault : byte
+		private enum RegPacketConfig2RestartRx : byte
 		{
 			Off = 0b00000000,
 			On = 0b00000100,
@@ -451,6 +450,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		private GpioPin InterruptGpioPin = null;
 		private GpioPin ResetGpioPin = null;
 		public RegisterManager RegisterManager = null; // Future refactor this will be made private
+		private bool InterruptProccessing = false;
 
 		public Rfm69HcwDevice(ChipSelectPin chipSelectPin, int resetPin, int interruptPin)
 		{
@@ -512,7 +512,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			byte payloadLength = PayloadLengthDefault,
 			byte? addressNode = null, byte? addressbroadcast = null,
 			TxStartCondition txStartCondition = TxStartConditionDefault, byte fifoThreshold = FifoThresholdDefault,
-			byte interPacketRxDelay = InterPacketRxDelayDefault, bool restartRx = RestartRxDefault, bool autoRestartRx = AutoRestartRxDefault,
+			byte interPacketRxDelay = InterPacketRxDelayDefault, bool autoRestartRx = AutoRestartRxDefault,
 			byte[] aesKey = null
 			)
 		{
@@ -812,18 +812,9 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			}
 
 			// RegPacketConfig2
-			if ((interPacketRxDelay != InterPacketRxDelayDefault ) || ( restartRx != RestartRxDefault ) || (autoRestartRx != AutoRestartRxDefault) || ( aesKey != null))
+			if ((interPacketRxDelay != InterPacketRxDelayDefault) || (autoRestartRx != AutoRestartRxDefault) || (aesKey != null))
 			{
 				byte packetConfig2Value = (byte)interPacketRxDelay;
-
-				if (restartRx)
-				{
-					packetConfig2Value |= (byte)RegPacketConfig2RestartRxDefault.On;
-				}
-				else
-				{
-					packetConfig2Value |= (byte)RegPacketConfig2RestartRxDefault.Off;
-				}
 
 				if (autoRestartRx)
 				{
@@ -856,6 +847,47 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			SetMode(modeAfterInitialise);
 		}
 
+		private void ProcessPayloadReady(RegIrqFlags1 irqFlags1, RegIrqFlags2 irqFlags2)
+		{
+			byte regpacketConfig21 = this.RegisterManager.ReadByte((byte)Registers.RegPacketConfig2);
+			regpacketConfig21 |= (byte)0x04;
+			this.RegisterManager.WriteByte((byte)Registers.RegPacketConfig2, regpacketConfig21);
+
+			if ((irqFlags2 & RegIrqFlags2.CrcOk) == RegIrqFlags2.CrcOk)
+			{
+				// Read the length of the buffer
+				byte numberOfBytes = RegisterManager.ReadByte(0x0);
+
+				// Remove the address from start of the payload
+				if (((irqFlags1 & RegIrqFlags1.SynAddressMatch) == RegIrqFlags1.SynAddressMatch) && DeviceAddressingEnabled)
+				{
+					byte address = RegisterManager.ReadByte(0x0);
+					Debug.WriteLine("{0:HH:mm:ss.fff} Address 0X{1:X2} {2}", DateTime.Now, address, Convert.ToString((byte)address, 2).PadLeft(8, '0'));
+					numberOfBytes--;
+				}
+
+				// Allocate a buffer for the payload and read characters from the Fifo
+				byte[] messageBytes = new byte[numberOfBytes];
+
+				for (int i = 0; i < numberOfBytes; i++)
+				{
+					messageBytes[i] = RegisterManager.ReadByte(0x00); // RegFifo
+				}
+
+				string messageText = UTF8Encoding.UTF8.GetString(messageBytes);
+				Debug.WriteLine("{0:HH:mm:ss} Received {1} byte message {2}", DateTime.Now, messageBytes.Length, messageText);
+			}
+
+			byte regpacketConfig22 = this.RegisterManager.ReadByte((byte)Registers.RegPacketConfig2);
+			regpacketConfig22 |= (byte)0x04;
+			this.RegisterManager.WriteByte((byte)Registers.RegPacketConfig2, regpacketConfig22);
+		}
+
+		private void ProcessPacketSent()
+		{
+			Debug.WriteLine("{0:HH:mm:ss.fff} Transmit-Done", DateTime.Now);
+		}
+
 		private void InterruptGpioPin_ValueChanged(GpioPin sender, GpioPinValueChangedEventArgs args)
 		{
 			if (args.Edge != GpioPinEdge.RisingEdge)
@@ -863,55 +895,30 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				return;
 			}
 
+			if (InterruptProccessing)
+			{
+				Debug.WriteLine("{0:HH:mm:ss} InterruptProccessing++++++++++++", DateTime.Now);
+				return;
+			}
+			InterruptProccessing = true;
+
 			RegIrqFlags2 irqFlags2 = (RegIrqFlags2)RegisterManager.ReadByte((byte)Registers.RegIrqFlags2);
 			Debug.WriteLine("{0:HH:mm:ss.fff} RegIrqFlags2 {1}", DateTime.Now, Convert.ToString((byte)irqFlags2, 2).PadLeft(8, '0'));
 
+			RegIrqFlags1 irqFlags1 = (RegIrqFlags1)RegisterManager.ReadByte((byte)Registers.RegIrqFlags1);
+			Debug.WriteLine("{0:HH:mm:ss.fff} RegIrqFlags1 {1}", DateTime.Now, Convert.ToString((byte)irqFlags1, 2).PadLeft(8, '0'));
+
 			if ((irqFlags2 & RegIrqFlags2.PayloadReady) == RegIrqFlags2.PayloadReady)
 			{
-				//SetMode(RegOpModeMode.StandBy);
-
-				if ((irqFlags2 & RegIrqFlags2.CrcOk) == RegIrqFlags2.CrcOk)
-				{
-					RegIrqFlags1 irqFlags1 = (RegIrqFlags1)RegisterManager.ReadByte((byte)Registers.RegIrqFlags1); // RegIrqFlags1
-
-					//SetMode(RegOpModeMode.StandBy);
-
-					// Read the length of the buffer
-					byte numberOfBytes = RegisterManager.ReadByte(0x0);
-
-					//Debug.WriteLine("{0:HH:mm:ss.fff} RegIrqFlags1 {1}", DateTime.Now, Convert.ToString((byte)irqFlags1, 2).PadLeft(8, '0'));
-					if (((irqFlags1 & RegIrqFlags1.SynAddressMatch) == RegIrqFlags1.SynAddressMatch) && DeviceAddressingEnabled)
-					{
-						byte address = RegisterManager.ReadByte(0x0);
-						Debug.WriteLine("{0:HH:mm:ss.fff} Address 0X{1:X2} {2}", DateTime.Now, address, Convert.ToString((byte)address, 2).PadLeft(8, '0'));
-						numberOfBytes--;
-					}
-
-					SetMode(RegOpModeMode.StandBy);
-
-					// Allocate buffer for message
-					byte[] messageBytes = new byte[numberOfBytes];
-
-					for (int i = 0; i < numberOfBytes; i++)
-					{
-						messageBytes[i] = RegisterManager.ReadByte(0x00); // RegFifo
-					}
-					SetMode(RegOpModeMode.Receive);
-
-					string messageText = UTF8Encoding.UTF8.GetString(messageBytes);
-					Debug.WriteLine("{0:HH:mm:ss} Received {1} byte message {2}", DateTime.Now, messageBytes.Length, messageText);
-				}
-				else
-				{
-					Debug.WriteLine("{0:HH:mm:ss} Received message CRC NOK++++++++++++", DateTime.Now);
-				}
+				ProcessPayloadReady(irqFlags1, irqFlags2);
 			}
 
 			if ((irqFlags2 & RegIrqFlags2.PacketSent) == RegIrqFlags2.PacketSent)  // PacketSent set
 			{
-				RegisterManager.WriteByte(0x01, 0b00010000); // RegOpMode set ReceiveMode
-				Debug.WriteLine("{0:HH:mm:ss.fff} Transmit-Done", DateTime.Now);
+				ProcessPacketSent();
 			}
+
+			InterruptProccessing = false;
 		}
 
 		public void SendMessage(byte[] messageBytes)
@@ -999,7 +1006,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				rfm69Device.RegisterDump();
 				
 				// RegDioMapping1
-				rfm69Device.RegisterManager.WriteByte(0x26, 0x00);
+				rfm69Device.RegisterManager.WriteByte(0x26, 0x00); 
 
 				rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 
