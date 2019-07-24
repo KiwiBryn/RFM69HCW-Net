@@ -849,9 +849,11 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		private void ProcessPayloadReady(RegIrqFlags1 irqFlags1, RegIrqFlags2 irqFlags2)
 		{
-			byte regpacketConfig21 = this.RegisterManager.ReadByte((byte)Registers.RegPacketConfig2);
-			regpacketConfig21 |= (byte)0x04;
-			this.RegisterManager.WriteByte((byte)Registers.RegPacketConfig2, regpacketConfig21);
+			//byte regpacketConfig21 = this.RegisterManager.ReadByte((byte)Registers.RegPacketConfig2);
+			//regpacketConfig21 |= (byte)0x04;
+			//this.RegisterManager.WriteByte((byte)Registers.RegPacketConfig2, regpacketConfig21);
+
+			SetMode(RegOpModeMode.StandBy);
 
 			if ((irqFlags2 & RegIrqFlags2.CrcOk) == RegIrqFlags2.CrcOk)
 			{
@@ -869,14 +871,19 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				// Allocate a buffer for the payload and read characters from the Fifo
 				byte[] messageBytes = new byte[numberOfBytes];
 
+				//SetMode(RegOpModeMode.StandBy);
+
 				for (int i = 0; i < numberOfBytes; i++)
 				{
 					messageBytes[i] = RegisterManager.ReadByte(0x00); // RegFifo
 				}
+				//SetMode(RegOpModeMode.Receive);
 
 				string messageText = UTF8Encoding.UTF8.GetString(messageBytes);
 				Debug.WriteLine("{0:HH:mm:ss} Received {1} byte message {2}", DateTime.Now, messageBytes.Length, messageText);
 			}
+
+			SetMode(RegOpModeMode.Receive);
 
 			byte regpacketConfig22 = this.RegisterManager.ReadByte((byte)Registers.RegPacketConfig2);
 			regpacketConfig22 |= (byte)0x04;
@@ -987,8 +994,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			InterruptGpioPin3.SetDriveMode(GpioPinDriveMode.InputPullUp);
 			InterruptGpioPin3.ValueChanged += InterruptGpioPin3_ValueChanged; ;
 
-			rfm69Device.RegisterDump();
-
 			try
 			{
 				rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy,
@@ -998,15 +1003,14 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 												preambleSize: 16,
 												syncValues: syncValues,
 												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
+												autoRestartRx:false,
 												addressNode: 0x66,
 												addressbroadcast: 0x99//,
 												//aesKey: aesKeyValues
 												);
 
-				rfm69Device.RegisterDump();
-				
 				// RegDioMapping1
-				rfm69Device.RegisterManager.WriteByte(0x26, 0x00); 
+				rfm69Device.RegisterManager.WriteByte(0x26, 0x01); 
 
 				rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 
