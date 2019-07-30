@@ -123,10 +123,23 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 
 		// RegOpMode mode flags
-		private const byte RegOpModeSequencerOff = 0b10000000;
-		private const byte RegOpModeListenOn = 0b01000000;
-		private const byte RegOpModeListenOff = 0b00000000;
-		private const byte RegOpModeListenAbort = 0b01000000;
+		[Flags]
+		public enum RegOpModeSequencer : byte
+		{
+			Off = 0b00000000,
+			On= 0b10000000,
+		}
+		public const bool RegOpModeSequencerDefault = false;
+
+		[Flags]
+		public enum RegOpModeListen : byte
+		{
+			Off = 0b00000000,
+			On = 0b01000000,
+		}
+		public const bool RegOpModeListenDefault = false;
+
+		private const byte RegOpModeListenAbort = 0b00100000;
 
 		[Flags]
 		public enum RegOpModeMode : byte
@@ -378,12 +391,12 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 		const bool PacketCrcOnDefault = true;
 
-		private enum RegPacketConfig1CrcAutoClearOff : byte
+		private enum RegPacketConfig1CrcAutoClear : byte
 		{
-			ClearFifo = 0b00000000,
-			DoNotClearFifo = 0b00001000,
+			On = 0b00000000,
+			Off = 0b00001000,
 		}
-		const bool PacketCrcAutoClearOffDefault = false;
+		const bool PacketCrcAutoClearDefault = true;
 
 		public enum RegPacketConfig1CrcAddressFiltering : byte
 		{
@@ -396,6 +409,10 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		// RegPayloadLength
 		const byte PayloadLengthDefault = 0x40;
+		const byte PayloadLengthAddressedMinimum = 0;
+		const byte PayloadLengthMaximum = 255;
+		const byte PayloadLengthAddressedMaximum = 254;
+		const byte PayloadLengthAesEnabledMaximum = 64;
 
 		// RegNodeAdrs
 		const byte NodeAddressDefault = 0x0;
@@ -427,13 +444,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			On = 0b00000100,
 		}
 
-		private const bool AutoRestartRxDefault = true;
 		[Flags]
-		private enum RegPacketConfig2AutoRestartRxDefault : byte
+		private enum RegPacketConfig2AutoRestartRx : byte
 		{
 			Off = 0b00000000,
 			On = 0b00000010,
 		}
+		private const bool AutoRestartRxDefault = true;
 
 		[Flags]
 		private enum RegPacketConfig2Aes : byte
@@ -442,13 +459,17 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			On = 0b00000001,
 		}
 		public const byte AesKeyLength = 16;
+		private readonly byte[] aesKeyDefault = { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
 
 		// Hardware configuration support
 		private RegOpModeMode RegOpModeModeCurrent = RegOpModeMode.Sleep;
 		private RegPacketConfig1PacketFormat PacketFormat = RegPacketConfig1PacketFormatDefault;
-		private bool DeviceAddressingEnabled = false;
+		private Byte PayloadLength;
+		private bool AddressingEnabled = false;
+		private bool AesEnabled = false;
 		private GpioPin InterruptGpioPin = null;
 		private GpioPin ResetGpioPin = null;
+		private GpioPin PacketReceivedGpioPin = null;
 		public RegisterManager RegisterManager = null; // Future refactor this will be made private
 		private bool InterruptProccessing = false;
 
@@ -471,7 +492,11 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 			// Interrupt pin for RX message & TX done notification 
 			InterruptGpioPin = gpioController.OpenPin(interruptPin);
-			ResetGpioPin.SetDriveMode(GpioPinDriveMode.Input);
+			InterruptGpioPin.SetDriveMode(GpioPinDriveMode.Input);
+
+			// Temporary display of inbound packet
+			PacketReceivedGpioPin = gpioController.OpenPin(47);
+			PacketReceivedGpioPin.SetDriveMode(GpioPinDriveMode.Output);
 
 			InterruptGpioPin.ValueChanged += InterruptGpioPin_ValueChanged;
 		}
@@ -508,7 +533,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			RegPacketConfig1PacketFormat packetFormat = RegPacketConfig1PacketFormat.FixedLength,
 			RegPacketConfig1DcFree packetDcFree = RegPacketConfig1DcFreeDefault,
 			bool packetCrc = PacketCrcOnDefault,
-			bool packetCrcAutoClearOff = PacketCrcAutoClearOffDefault,
+			bool packetCrcAutoClear = PacketCrcAutoClearDefault,
 			byte payloadLength = PayloadLengthDefault,
 			byte? addressNode = null, byte? addressbroadcast = null,
 			TxStartCondition txStartCondition = TxStartConditionDefault, byte fifoThreshold = FifoThresholdDefault,
@@ -518,6 +543,9 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		{
 			RegOpModeModeCurrent = modeAfterInitialise;
 			PacketFormat = packetFormat;
+			PayloadLength = payloadLength;
+			AddressingEnabled = (addressNode.HasValue || addressbroadcast.HasValue);
+			AesEnabled = (aesKey != null);
 
 			#region RegSyncConfig + RegSyncValue1 to RegSyncValue8 guard conditions
 			if (syncValues != null)
@@ -555,7 +583,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			{
 				throw new ArgumentException($"The interPacketRxDelay must be between {InterPacketRxDelayMinimum} and {InterPacketRxDelayMaximum}", "interPacketRxDelay");
 			}
-			if ((aesKey != null) && (aesKey.Length != AesKeyLength))
+			if (AesEnabled && (aesKey.Length != AesKeyLength))
 			{
 				throw new ArgumentException($"The AES key must be {AesKeyLength} bytes", "aesKey");
 			}
@@ -740,7 +768,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			if ((packetFormat != RegPacketConfig1PacketFormatDefault) ||
 				 (packetDcFree != RegPacketConfig1DcFreeDefault) ||
 				 (packetCrc != PacketCrcOnDefault) ||
-				 (packetCrcAutoClearOff != PacketCrcAutoClearOffDefault) ||
+				 (packetCrcAutoClear != PacketCrcAutoClearDefault) ||
 				 addressNode.HasValue ||
 				 addressbroadcast.HasValue)
 			{
@@ -757,13 +785,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 					packetConfig1Value |= (byte)RegPacketConfig1Crc.Off;
 				}
 
-				if (packetCrcAutoClearOff)
+				if (packetCrcAutoClear)
 				{
-					packetConfig1Value |= (byte)RegPacketConfig1CrcAutoClearOff.DoNotClearFifo;
+					packetConfig1Value |= (byte)RegPacketConfig1CrcAutoClear.On;
 				}
 				else
 				{
-					packetConfig1Value |= (byte)RegPacketConfig1CrcAutoClearOff.ClearFifo;
+					packetConfig1Value |= (byte)RegPacketConfig1CrcAutoClear.Off;
 				}
 
 				packetConfig1Value |= (byte)RegPacketConfig1CrcAddressFiltering.None;
@@ -778,8 +806,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 				RegisterManager.WriteByte((byte)Registers.RegPacketConfig1, packetConfig1Value);
 			}
-
-			DeviceAddressingEnabled = (addressNode.HasValue || addressbroadcast.HasValue);
 
 			// RegPayloadLength
 			if (payloadLength != PayloadLengthDefault)
@@ -812,20 +838,20 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			}
 
 			// RegPacketConfig2
-			if ((interPacketRxDelay != InterPacketRxDelayDefault) || (autoRestartRx != AutoRestartRxDefault) || (aesKey != null))
+			if ((interPacketRxDelay != InterPacketRxDelayDefault) || (autoRestartRx != AutoRestartRxDefault) || AesEnabled)
 			{
 				byte packetConfig2Value = (byte)interPacketRxDelay;
 
 				if (autoRestartRx)
 				{
-					packetConfig2Value |= (byte)RegPacketConfig2AutoRestartRxDefault.On;
+					packetConfig2Value |= (byte)RegPacketConfig2AutoRestartRx.On;
 				}
 				else
 				{
-					packetConfig2Value |= (byte)RegPacketConfig2AutoRestartRxDefault.Off;
+					packetConfig2Value |= (byte)RegPacketConfig2AutoRestartRx.Off;
 				}
 
-				if (aesKey!=null)
+				if (AesEnabled)
 				{
 					packetConfig2Value |= (byte)RegPacketConfig2Aes.On;
 				}
@@ -838,9 +864,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			}
 
 			// RegAesKey1 through RegAesKey16
-			if (aesKey!=null)
+			if (AesEnabled)
 			{
 				RegisterManager.Write((byte)Registers.RegAesKey1, aesKey);
+			}
+			else
+			{
+				RegisterManager.Write((byte)Registers.RegAesKey1, aesKeyDefault);
 			}
 
 			// Configure RegOpMode before returning
@@ -849,45 +879,45 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		private void ProcessPayloadReady(RegIrqFlags1 irqFlags1, RegIrqFlags2 irqFlags2)
 		{
-			//byte regpacketConfig21 = this.RegisterManager.ReadByte((byte)Registers.RegPacketConfig2);
-			//regpacketConfig21 |= (byte)0x04;
-			//this.RegisterManager.WriteByte((byte)Registers.RegPacketConfig2, regpacketConfig21);
+			byte numberOfBytes;
 
-			SetMode(RegOpModeMode.StandBy);
+			//SetMode(RegOpModeMode.StandBy);
 
-			if ((irqFlags2 & RegIrqFlags2.CrcOk) == RegIrqFlags2.CrcOk)
+			PacketReceivedGpioPin.Write(GpioPinValue.High);
+
+			// Read the length of the buffer if variable length packets
+			if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 			{
-				// Read the length of the buffer
-				byte numberOfBytes = RegisterManager.ReadByte(0x0);
-
-				// Remove the address from start of the payload
-				if (((irqFlags1 & RegIrqFlags1.SynAddressMatch) == RegIrqFlags1.SynAddressMatch) && DeviceAddressingEnabled)
-				{
-					byte address = RegisterManager.ReadByte(0x0);
-					Debug.WriteLine("{0:HH:mm:ss.fff} Address 0X{1:X2} {2}", DateTime.Now, address, Convert.ToString((byte)address, 2).PadLeft(8, '0'));
-					numberOfBytes--;
-				}
-
-				// Allocate a buffer for the payload and read characters from the Fifo
-				byte[] messageBytes = new byte[numberOfBytes];
-
-				//SetMode(RegOpModeMode.StandBy);
-
-				for (int i = 0; i < numberOfBytes; i++)
-				{
-					messageBytes[i] = RegisterManager.ReadByte(0x00); // RegFifo
-				}
-				//SetMode(RegOpModeMode.Receive);
-
-				string messageText = UTF8Encoding.UTF8.GetString(messageBytes);
-				Debug.WriteLine("{0:HH:mm:ss} Received {1} byte message {2}", DateTime.Now, messageBytes.Length, messageText);
+				numberOfBytes = RegisterManager.ReadByte((byte)Rfm69HcwDevice.Registers.RegFifo);
+			}
+			else
+			{
+				numberOfBytes = PayloadLength;
 			}
 
-			SetMode(RegOpModeMode.Receive);
+			// Remove the address from start of the payload
+			if (AddressingEnabled)
+			{
+				byte address = RegisterManager.ReadByte((byte)Rfm69HcwDevice.Registers.RegFifo);
 
-			byte regpacketConfig22 = this.RegisterManager.ReadByte((byte)Registers.RegPacketConfig2);
-			regpacketConfig22 |= (byte)0x04;
-			this.RegisterManager.WriteByte((byte)Registers.RegPacketConfig2, regpacketConfig22);
+				Debug.WriteLine("{0:HH:mm:ss.fff} Address 0X{1:X2} {2}", DateTime.Now, address, Convert.ToString((byte)address, 2).PadLeft(8, '0'));
+				numberOfBytes--;
+			}
+
+			// Allocate a buffer for the payload and read characters from the Fifo
+			byte[] messageBytes = new byte[numberOfBytes];
+
+			for (int i = 0; i < numberOfBytes; i++)
+			{
+				messageBytes[i] = RegisterManager.ReadByte((byte)Rfm69HcwDevice.Registers.RegFifo);
+			}
+
+			string messageText = UTF8Encoding.UTF8.GetString(messageBytes);
+			Debug.WriteLine("{0:HH:mm:ss} Received {1} byte message {2}", DateTime.Now, messageBytes.Length, messageText);
+
+			PacketReceivedGpioPin.Write(GpioPinValue.Low);
+
+			//SetMode(RegOpModeMode.Receive);
 		}
 
 		private void ProcessPacketSent()
@@ -930,11 +960,33 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		public void SendMessage(byte[] messageBytes)
 		{
+			#region Guard conditions
+			if (AddressingEnabled)
+			{
+				throw new ApplicationException("Addressed message mode enabled");
+			}
+
+			if (this.AesEnabled)
+			{
+				if (messageBytes.Length > PayloadLengthAesEnabledMaximum)
+				{
+					throw new ArgumentException($"Payload maximum {PayloadLengthAesEnabledMaximum} bytes when encryption enabled", "messageBytes");
+				}
+			}
+			else
+			{
+				if (messageBytes.Length > PayloadLengthMaximum)
+				{
+					throw new ArgumentException($"Payload maximum {PayloadLengthMaximum} bytes", "messageBytes");
+				}
+			}
+			#endregion
+
 			SetMode(RegOpModeMode.StandBy);
 
 			if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 			{
-				RegisterManager.WriteByte(0x0, (byte)messageBytes.Length);
+				RegisterManager.WriteByte((byte)Registers.RegFifo, (byte)messageBytes.Length);
 			}
 
 			foreach (byte b in messageBytes)
@@ -947,14 +999,36 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		public void SendMessage(byte address, byte[] messageBytes)
 		{
+			#region Guard conditions
+			if ( !AddressingEnabled)
+			{
+				throw new ApplicationException("Addressed message mode not enabled");
+			}
+
+			if ( this.AesEnabled )
+			{
+				if (messageBytes.Length > PayloadLengthAesEnabledMaximum)
+				{
+					throw new ArgumentException($"Payload maximum {PayloadLengthAesEnabledMaximum} bytes when encryption enabled", "messageBytes");
+				}
+			}
+			else
+			{
+				if (messageBytes.Length > PayloadLengthAddressedMaximum)
+				{
+					throw new ArgumentException($"Payload maximum {PayloadLengthAesEnabledMaximum} bytes when addressing enabled", "messageBytes");
+				}
+			}
+			#endregion
+
 			SetMode(RegOpModeMode.StandBy);
 
 			if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 			{
-				RegisterManager.WriteByte(0x0, (byte)(messageBytes.Length+1));
+				RegisterManager.WriteByte((byte)Registers.RegFifo, (byte)(messageBytes.Length+1)); // Additional byte for address 
 			}
 
-			RegisterManager.WriteByte(0x0, address);
+			RegisterManager.WriteByte((byte)Registers.RegFifo, address);
 
 			foreach (byte b in messageBytes)
 			{
@@ -1003,14 +1077,14 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 												preambleSize: 16,
 												syncValues: syncValues,
 												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
-												autoRestartRx:false,
-												addressNode: 0x66,
-												addressbroadcast: 0x99//,
+												autoRestartRx:false//,
+												//addressNode: 0x66,
+												//addressbroadcast: 0x99//,
 												//aesKey: aesKeyValues
 												);
 
 				// RegDioMapping1
-				rfm69Device.RegisterManager.WriteByte(0x26, 0x01); 
+				rfm69Device.RegisterManager.WriteByte(0x25, 0x00); 
 
 				rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 
