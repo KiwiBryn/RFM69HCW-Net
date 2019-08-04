@@ -150,8 +150,45 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			Transmit = 0b00001100,
 			Receive = 0b00010000,
 		};
+		public const RegOpModeMode RegOpModeModeDefault = RegOpModeMode.StandBy;
 
-		// BitRate configuration from table9 in datasheet RegBitrateMsb, RegBitrateLsb
+		// RegDataModul
+		[Flags]
+		public enum DataMode : byte
+		{
+			PacketMode = 0b00000000,
+			ContinuousBitSynchroniser = 0b01000000,
+			ContinuousWithourBitSynchroniser = 0b01100000,
+		}
+		const DataMode DataModeDefault = DataMode.PacketMode;
+
+		[Flags]
+		public enum ModulationType
+		{
+			Fsk = 0b00000000,
+			Ook = 0b00001000
+		}
+		public const ModulationType ModulationTypeDefault = ModulationType.Fsk;
+
+		[Flags]
+		public enum ModulationShapingFsk
+		{
+			NoShaping = 0b00000000,
+			GaussianBT1_0 = 0b00000001,
+			GaussianBT0_5 = 0b00000010,
+			GaussianBT0_3 = 0b00000011,
+		}
+		public const ModulationShapingFsk modulationShapingFskDefault = ModulationShapingFsk.NoShaping;
+
+		public enum ModulationShapingOok
+		{
+			NoShaping = 0b00000000,
+			FilteringCutoffBR = 0b00000001,
+			FilteringCutoff2BR = 0b00000010,
+		}
+		public const ModulationShapingOok modulationShapingOokDefault = ModulationShapingOok.NoShaping;
+
+		// BitRate configuration from table 9 in datasheet RegBitrateMsb, RegBitrateLsb
 		public enum BitRate : ushort
 		{
 			bps1K2 = 0x682B,
@@ -181,6 +218,24 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		private const double RH_RF6M9HCW_FXOSC = 32000000.0;
 		private const double RH_RFM69HCW_FSTEP = RH_RF6M9HCW_FXOSC / 524288.0;
 		public const double FrequencyDefault = 915000000.0;
+
+		// RegOsc1 settings
+		private const byte RcCalStart = 0b10000000;
+
+		[Flags]
+		private enum RcCal : byte
+		{
+			InProgress = 0b00000000,
+			Done = 0b01000000,
+		}
+
+		// RegAfcCtrl settings
+		public enum AfcLowBeta : byte
+		{
+			Standard = 0b00000000,
+			Improved = 0b00100000,
+		}
+		public const AfcLowBeta AfcLowBetaDefault = AfcLowBeta.Standard;
 
 		// RegListen1 settings
 		public enum ListenModeIdleResolution : byte
@@ -213,7 +268,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			StayInRXMode = 0b00000000,
 			StayInRxModeUntilPayloadReady = 0b00000010,
 			StayInRxModeUntilPayloadReadyOrTimeoutInterrupt = 0b00000100,
-			Reserved = 0b00000110,
 		}
 		const ListenModeEnd ListenModeEndDefault = ListenModeEnd.StayInRxModeUntilPayloadReadyOrTimeoutInterrupt;
 
@@ -255,8 +309,16 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		const PaRamp PaRampDefault = PaRamp.Period40us;
 
 		// RegOcp values
+		private enum Ocp : byte
+		{
+			Enabled = 0b00010000,
+			Disabled = 0b00000000,
+		}
 		const bool OcpOnDefault = true;
-		const byte OcpTrimDefault = 0b0001010;
+
+		const byte OcpTrimMaMinimum = 45;
+		const byte OcpTrimMaMaxmum = 120;
+		const byte OcpTrimDefault = 95;
 
 		// RegLna
 		public enum LnaZin : byte
@@ -282,7 +344,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			G4 = 0b00000100,
 			G5 = 0b00000101,
 			G6 = 0b00000110,
-			Reserved = 0b00000111,
 		}
 		const LnaGainSelect LnaGainSelectDefault = LnaGainSelect.AGC;
 
@@ -294,7 +355,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			RxBwMant16 = 0b00000000,
 			RxBwMant20 = 0b00001000,
 			RxBwMant24 = 0b00010000,
-			Reserved = 0b00011000
 		}
 		const RxBwMant RxBwMantDefault = RxBwMant.RxBwMant24;
 		const byte RxBwExpDefault = 0b00000101;
@@ -309,7 +369,96 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		// RegAfcMsb, RegAfcLsb
 		// RegFeiMsb, RegFeiLsb
 
-		// RegDioMapping1 & RegDioMapping1 CpntinuousMode Table 21/ Packet Mode Table 22 pg48
+		// RegDioMapping1 & RegDioMapping1 Continuous Mode Table 21/ Packet Mode Table 22 pg48
+		public enum SleepDio0Mapping : byte
+		{
+			// unused
+		}
+
+		[Flags]
+		public enum StandByDio0Mapping : byte
+		{
+			// unused
+		}
+
+		[Flags]
+		public enum FrequencySynthesisDio0Mapping : byte
+		{
+			PllLock = 0b11000000,
+		}
+
+		[Flags]
+		public enum ReceiveDio0Mapping : byte
+		{
+			CrcOk = 0b00000000,
+			PayloadReady = 0b01000000,
+			SyncAddress = 0b10000000,
+			Rssi = 0b11000000,
+		}
+
+		[Flags]
+		public enum TransmitMappingDio0 : byte
+		{
+			PacketSent = 0b00000000,
+			TxReady = 0b01000000,
+			// unused
+			PllLock = 0b11000000,
+		}
+
+		[Flags]
+		public enum SleepDio1Mapping : byte
+		{
+			FifoLevel = 0b00000000,
+			FifoFull = 0b00010000,
+			FifoNotEmpty = 0b00100000,
+		}
+
+		[Flags]
+		public enum StandbyDio1Mapping : byte
+		{
+			FifoLevel = 0b00000000,
+			FifoFull = 0b00010000,
+			FifoNotEmpty = 0b00100000,
+		}
+
+		[Flags]
+		public enum FrequencySynthesisDio1Mapping : byte
+		{
+			FifoLevel = 0b00000000,
+			FifoFull = 0b00010000,
+			FifoNotEmpty = 0b00100000,
+			PllLock = 0b00110000,
+		}
+
+		[Flags]
+		public enum ReceiveDio1Mapping : byte
+		{
+			FifoLevel = 0b00000000,
+			FifoFull = 0b00010000,
+			FifoNotEmpty = 0b00100000,
+			Timeout = 0b00110000,
+		}
+
+		[Flags]
+		public enum TransmitDio1Mapping : byte
+		{
+			FifoLevel = 0b00000000,
+			FifoFull = 0b00010000,
+			FifoNotEmpty = 0b00100000,
+			PllLock = 0b00110000,
+		}
+
+		public enum ClockOutDioMapping : byte
+		{
+			FXOsc = 0b00000000,
+			FXOscDiv2 = 0b00000001,
+			FXOscDiv4 = 0b00000010,
+			FXOscDiv8 = 0b00000011,
+			FXOscDiv16 = 0b00000100,
+			FXOscDiv32 = 0b00000101,
+			RC = 0b00000110,
+			Off = 0b00000111,
+		}
 
 		// RegIrqFlags1
 		[Flags]
@@ -463,6 +612,8 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		// Hardware configuration support
 		private RegOpModeMode RegOpModeModeCurrent = RegOpModeMode.Sleep;
+		private RegOpModeSequencer Sequencer = RegOpModeSequencer.Off;
+		private RegOpModeListen Listen =  RegOpModeListen.Off;
 		private RegPacketConfig1PacketFormat PacketFormat = RegPacketConfig1PacketFormatDefault;
 		private Byte PayloadLength;
 		private bool AddressingEnabled = false;
@@ -511,14 +662,20 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		{
 			byte regOpModeValue = (byte)mode;
 
+			regOpModeValue |= (byte)Sequencer;
+			regOpModeValue |= (byte)Listen;
+
 			RegisterManager.WriteByte((byte)Registers.RegOpMode, regOpModeValue);
 		}
 
 
 		public void Initialise(RegOpModeMode modeAfterInitialise,
+			bool sequencer = RegOpModeSequencerDefault,
+			bool listen = RegOpModeListenDefault,
 			BitRate bitRate = BitRateDefault,
 			ushort frequencyDeviation = frequencyDeviationDefault,
 			double frequency = FrequencyDefault,
+			AfcLowBeta afcLowBeta = AfcLowBetaDefault,
 			ListenModeIdleResolution listenModeIdleResolution = ListenModeIdleResolutionDefault, ListenModeRXTime listenModeRXTime = ListenModeRXTimeDefault, ListenModeCrieria listenModeCrieria = ListenModeCrieriaDefault, ListenModeEnd listenModeEnd = ListenModeEndDefault,
 			byte listenCoefficientIdle = ListenCoefficientIdleDefault,
 			byte listenCoefficientReceive = ListenCoefficientReceiveDefault,
@@ -542,6 +699,22 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			)
 		{
 			RegOpModeModeCurrent = modeAfterInitialise;
+			if ( sequencer)
+			{
+				Sequencer = RegOpModeSequencer.On;
+			}
+			else
+			{
+				Sequencer = RegOpModeSequencer.Off;
+			}
+			if ( listen )
+			{
+				Listen = RegOpModeListen.On;
+			}
+			else
+			{
+				Listen = RegOpModeListen.Off;
+			}
 			PacketFormat = packetFormat;
 			PayloadLength = payloadLength;
 			AddressingEnabled = (addressNode.HasValue || addressbroadcast.HasValue);
@@ -625,6 +798,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegFrfLsb, bytes[0]);
 			}
 
+			// RegAfcCtrl settings
+			if ( afcLowBeta != AfcLowBetaDefault)
+			{
+				RegisterManager.WriteByte((byte)Registers.RegAfcCtrl, (byte)afcLowBeta);
+			}
+
+			// RegListen1 settings
 			if ((listenModeIdleResolution != ListenModeIdleResolutionDefault) ||
 				 (listenModeRXTime != ListenModeRXTimeDefault) ||
 				 (listenModeCrieria != ListenModeCrieriaDefault) ||
@@ -639,16 +819,19 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegListen1, regListen1Value);
 			}
 
+			// RegListen2 settings
 			if (listenCoefficientIdle != ListenCoefficientIdleDefault)
 			{
 				RegisterManager.WriteByte((byte)Registers.RegListen2, listenCoefficientIdle);
 			}
 
+			// RegListen3 settings
 			if (listenCoefficientReceive != ListenCoefficientReceiveDefault)
 			{
 				RegisterManager.WriteByte((byte)Registers.RegListen3, listenCoefficientReceive);
 			}
 
+			// RegPaLevel settings
 			if ((pa0On != pa0OnDefault) ||
 				 (pa1On != pa1OnDefaut) ||
 				 (pa2On != pa2OnDefault) ||
@@ -671,7 +854,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegPaLevel, regPaLevelValue);
 			}
 
-			// Set RegOcp if any of the settings not defaults
+			// RegPaRamp settings
+			if (paRamp != PaRampDefault)
+			{
+				RegisterManager.WriteByte((byte)Registers.RegPaRamp, (byte)paRamp);
+			}
+
+			// RegOcp settings 
 			if ((ocpOn != OcpOnDefault) ||
 				 (ocpTrim != OcpTrimDefault))
 			{
@@ -684,7 +873,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegOcp, regOcpValue);
 			}
 
-			// regLnaValue
+			// regLnaValue settings
 			if ((lnaZin != LnaZinDefault) ||
 				 (lnaCurrentGain != LnaCurrentGainDefault) ||
 				 (lnaGainSelect != LnaGainSelectDefault))
@@ -710,7 +899,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegRxBw, regRxBwValue);
 			}
 
-			// RegAfcBw
+			// RegAfcBw settings
 			if ((dccFreqAfc != DccFreqAfcDefault) ||
 				 (rxBwMantAfc != RxBwMantAfcDefault) ||
 				 (bxBwExpAfc != RxBwExpAfcDefault))
@@ -723,7 +912,11 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 				RegisterManager.WriteByte((byte)Registers.RegAfcBw, regAfcBwValue);
 			}
 
-			// RegPreambleMsb RegPreambleLsb
+			// RegDioMapping1
+
+			// RegDioMapping2
+
+			// RegPreambleMsb RegPreambleLsb settings
 			if (preambleSize != PreambleSizeDefault)
 			{
 				byte[] bytes = BitConverter.GetBytes((ushort)preambleSize);
