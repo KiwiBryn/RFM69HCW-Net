@@ -146,7 +146,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		{
 			Sleep = 0b00000000,
 			StandBy = 0b00000100,
-			FrequencySynthesisTx = 0b00001000,
+			FrequencySynthesiser = 0b00001000,
 			Transmit = 0b00001100,
 			Receive = 0b00010000,
 		};
@@ -157,7 +157,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		public enum DataMode : byte
 		{
 			PacketMode = 0b00000000,
-			ContinuousBitSynchroniser = 0b01000000,
+			ContinuousWithBitSynchroniser = 0b01000000,
 			ContinuousWithourBitSynchroniser = 0b01100000,
 		}
 		const DataMode DataModeDefault = DataMode.PacketMode;
@@ -180,6 +180,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 		public const ModulationShapingFsk modulationShapingFskDefault = ModulationShapingFsk.NoShaping;
 
+		[Flags]
 		public enum ModulationShapingOok
 		{
 			NoShaping = 0b00000000,
@@ -199,7 +200,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			bps38K4 = 0x0341,
 			bps76K8 = 0x01A1,
 			bps153K6 = 0x00D0,
-			bps57K6 = 0x022Cc,
+			bps57K6 = 0x022C,
 			bps115K2 = 0x0116,
 			bps12K5 = 0x0A00,
 			bps25K = 0x0500,
@@ -230,6 +231,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 
 		// RegAfcCtrl settings
+		[Flags]
 		public enum AfcLowBeta : byte
 		{
 			Standard = 0b00000000,
@@ -238,15 +240,17 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		public const AfcLowBeta AfcLowBetaDefault = AfcLowBeta.Standard;
 
 		// RegListen1 settings
+		[Flags]
 		public enum ListenModeIdleResolution : byte
 		{
 			Reserved = 0b00000000,
-			IdleTime64us = 0b01000000,
-			IdleTime4_1ms = 0b10000000,
-			IdleTime262ms = 0b11000000,
+			Time64us = 0b01000000,
+			Time4_1ms = 0b10000000,
+			Time262ms = 0b11000000,
 		}
-		const ListenModeIdleResolution ListenModeIdleResolutionDefault = ListenModeIdleResolution.IdleTime4_1ms;
+		const ListenModeIdleResolution ListenModeIdleResolutionDefault = ListenModeIdleResolution.Time4_1ms;
 
+		[Flags]
 		public enum ListenModeRXTime : byte
 		{
 			Reserved = 0b00000000,
@@ -256,13 +260,15 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 		const ListenModeRXTime ListenModeRXTimeDefault = ListenModeRXTime.IdleTime64us;
 
-		public enum ListenModeCrieria : byte
+		[Flags]
+		public enum ListenModeCriteria : byte
 		{
 			RssiThreshold = 0b00000000,
 			RssiThresholdAndSyncAddressMatched = 0b00001000
 		}
-		const ListenModeCrieria ListenModeCrieriaDefault = ListenModeCrieria.RssiThreshold;
+		const ListenModeCriteria ListenModeCriteriaDefault = ListenModeCriteria.RssiThreshold;
 
+		[Flags]
 		public enum ListenModeEnd : byte
 		{
 			StayInRXMode = 0b00000000,
@@ -281,32 +287,41 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		const byte RegVersionValueExpected = 0x24;
 
 		// RegPaLevel 
+		public enum PaOn :byte
+		{
+			Pa0On = 0b10000000,
+			Pa1On = 0b01000000,
+			Pa2On = 0b00100000,
+		}
 		const bool pa0OnDefault = true;
 		const bool pa1OnDefaut = false;
 		const bool pa2OnDefault = false;
+		// TODO consider doing dB maths like OCP trim
 		const byte OutputpowerDefault = 0b00011111;
+		const byte OutputpowerMinimum = 0b00000000;
+		const byte OutputpowerMaximum = 0b00011111;
 
 		// RegPaRamp 
 		public enum PaRamp : byte
 		{
-			Period3_4ms = 0b00000000,
-			Period2ms =   0b00000001,
-			Period1ms =   0b00000010,
-			Period500us = 0b00000011,
-			Period250us = 0b00000100,
-			Period125us = 0b00000101,
-			Period100us = 0b00000110,
-			Period62us =  0b00000111,
-			Period50us =  0b00001000,
-			Period40us =  0b00001001,
-			Period31us =  0b00001010,
-			Period25us =  0b00001011,
-			Period20us =  0b00001100,
-			Period15us =  0b00001101,
-			Period12us =  0b00001110,
-			Period10us =  0b00001111,
+			Time3_4ms = 0b00000000,
+			Time2ms =   0b00000001,
+			Time1ms =   0b00000010,
+			Time500us = 0b00000011,
+			Time250us = 0b00000100,
+			Time125us = 0b00000101,
+			Time100us = 0b00000110,
+			Time62us =  0b00000111,
+			Time50us =  0b00001000,
+			Time40us =  0b00001001,
+			Time31us =  0b00001010,
+			Time25us =  0b00001011,
+			Time20us =  0b00001100,
+			Time15us =  0b00001101,
+			Time12us =  0b00001110,
+			Time10us =  0b00001111,
 		}
-		const PaRamp PaRampDefault = PaRamp.Period40us;
+		const PaRamp PaRampDefault = PaRamp.Time40us;
 
 		// RegOcp values
 		private enum Ocp : byte
@@ -326,11 +341,11 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			Impedance50Ohms = 0b00000000,
 			Impedance200Ohms = 0b10000000
 		}
-		const LnaZin LnaZinDefault = LnaZin.Impedance50Ohms;
+		const LnaZin LnaZinDefault = LnaZin.Impedance200Ohms;
 
 		public enum LnaCurrentGain : byte
 		{
-			Manual = 0b00100000,
+			Manual = 0b00001000,
 			Agc = 0b00000000,
 		}
 		const LnaCurrentGain LnaCurrentGainDefault = LnaCurrentGain.Manual;
@@ -357,6 +372,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			RxBwMant24 = 0b00010000,
 		}
 		const RxBwMant RxBwMantDefault = RxBwMant.RxBwMant24;
+
 		const byte RxBwExpDefault = 0b00000101;
 
 		// RegAfcBW
@@ -397,7 +413,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 
 		[Flags]
-		public enum TransmitMappingDio0 : byte
+		public enum TransmitMappingDio0Mapping : byte
 		{
 			PacketSent = 0b00000000,
 			TxReady = 0b01000000,
@@ -411,6 +427,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			FifoLevel = 0b00000000,
 			FifoFull = 0b00010000,
 			FifoNotEmpty = 0b00100000,
+			// unused
 		}
 
 		[Flags]
@@ -419,6 +436,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			FifoLevel = 0b00000000,
 			FifoFull = 0b00010000,
 			FifoNotEmpty = 0b00100000,
+			// unused
 		}
 
 		[Flags]
@@ -446,6 +464,170 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			FifoFull = 0b00010000,
 			FifoNotEmpty = 0b00100000,
 			PllLock = 0b00110000,
+		}
+		
+		[Flags]
+		public enum SleepDio2Mapping : byte
+		{
+			FifoNotEmpty = 0b00000000,
+			// unused
+			AutoMode = 0b00001100,
+			// unused
+		}
+
+		[Flags]
+		public enum StandbyDio2Mapping : byte
+		{
+			FifoNotEmpty = 0b00000000,
+			// unused
+			AutoMode = 0b00001100,
+			// unused
+		}
+
+		[Flags]
+		public enum FrequencySynthesisDio2Mapping : byte
+		{
+			FifoNotEmpty = 0b00000000,
+			// unused
+			AutoMode = 0b00001100,
+			// unused
+		}
+
+		[Flags]
+		public enum ReceiveDio2Mapping : byte
+		{
+			FifoNotEmpty = 0b00000000,
+			Data = 0b00001000,
+			// unused
+			AutoMode = 0b00001100,
+		}
+
+		[Flags]
+		public enum TransmitDio2Mapping : byte
+		{
+			FifoNotEmpty = 0b00000000,
+			Data = 0b00001000,
+			// unused
+			AutoMode = 0b00001100,
+		}
+
+		[Flags]
+		public enum SleepDio3Mapping : byte
+		{
+			FifoLevel = 0b00000000,
+			FifoFull = 0b00000100,
+			FifoNotEmpty = 0b00001000,
+			// unused
+		}
+
+		[Flags]
+		public enum StandbyDio3Mapping : byte
+		{
+			FifoFull = 0b00000000,
+			// unused
+		}
+
+		[Flags]
+		public enum FrequencySynthesisDio3Mapping : byte
+		{
+			FifoFull = 0b00000000,
+			// unused
+		}
+
+		[Flags]
+		public enum ReceiveDio3Mapping : byte
+		{
+			FifoFull = 0b00000000,
+			Rssi = 0b00000001,
+			SyncAddress = 0b00000010,
+			PllLock = 0b0000011,
+		}
+
+		[Flags]
+		public enum TransmitDio3Mapping : byte
+		{
+			FifoFull = 0b00000000,
+			TxReady = 0b00000001,
+			// unused
+			PllLock = 0b00000011,
+		}
+
+		[Flags]
+		public enum SleepDio4Mapping : byte
+		{
+			// unused
+		}
+
+		[Flags]
+		public enum StandbyDio4Mapping : byte
+		{
+			// unused
+		}
+
+		[Flags]
+		public enum FrequencySynthesisDio4Mapping : byte
+		{
+			// unsued
+			PllLock = 0b11000000,
+		}
+
+		[Flags]
+		public enum ReceiveDio4Mapping : byte
+		{
+			Timeout = 0b11000000,
+			Rssi = 0b00000000,
+			RxReady = 0b01000000,
+			PllLock = 0b10000000,
+		}
+
+		[Flags]
+		public enum TransmitDio4Mapping : byte
+		{
+			ModeReady = 0b00000000,
+			TxReady = 0b01000000,
+			// unused
+			PllLock = 0b11000000,
+		}
+
+		[Flags]
+		public enum SleepDio5Mapping : byte
+		{
+			// unused
+			ModeReady = 0b00000000,
+		}
+
+		[Flags]
+		public enum StandbyDio5Mapping : byte
+		{
+			ClkOut = 0b00000000,
+			// unused
+			ModeReady = 0b00110000,
+		}
+
+		[Flags]
+		public enum FrequencySynthesisDio5Mapping : byte
+		{
+			ClkOut = 0b00000000,
+			// unused
+			ModeReady = 0b00110000,
+		}
+
+		[Flags]
+		public enum ReceiveDio5Mapping : byte
+		{
+			ClkOut = 0b00000000,
+			Data = 0b00010000,
+			// unused
+			ModeReady = 0b00110000,
+		}
+
+		[Flags]
+		public enum TransmitDio5Mapping : byte
+		{
+			ClkOut = 0b00000000,
+			Data = 0b00010000,
+			// unused
+			ModeReady = 0b00110000,
 		}
 
 		public enum ClockOutDioMapping : byte
@@ -676,7 +858,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			ushort frequencyDeviation = frequencyDeviationDefault,
 			double frequency = FrequencyDefault,
 			AfcLowBeta afcLowBeta = AfcLowBetaDefault,
-			ListenModeIdleResolution listenModeIdleResolution = ListenModeIdleResolutionDefault, ListenModeRXTime listenModeRXTime = ListenModeRXTimeDefault, ListenModeCrieria listenModeCrieria = ListenModeCrieriaDefault, ListenModeEnd listenModeEnd = ListenModeEndDefault,
+			ListenModeIdleResolution listenModeIdleResolution = ListenModeIdleResolutionDefault, ListenModeRXTime listenModeRXTime = ListenModeRXTimeDefault, ListenModeCriteria listenModeCrieria = ListenModeCriteriaDefault, ListenModeEnd listenModeEnd = ListenModeEndDefault,
 			byte listenCoefficientIdle = ListenCoefficientIdleDefault,
 			byte listenCoefficientReceive = ListenCoefficientReceiveDefault,
 			bool pa0On = pa0OnDefault, bool pa1On = pa1OnDefaut, bool pa2On = pa2OnDefault, byte outputpower = OutputpowerDefault,
@@ -807,7 +989,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			// RegListen1 settings
 			if ((listenModeIdleResolution != ListenModeIdleResolutionDefault) ||
 				 (listenModeRXTime != ListenModeRXTimeDefault) ||
-				 (listenModeCrieria != ListenModeCrieriaDefault) ||
+				 (listenModeCrieria != ListenModeCriteriaDefault) ||
 				 (listenModeEnd != ListenModeEndDefault))
 			{
 				byte regListen1Value = (byte)listenModeIdleResolution;
