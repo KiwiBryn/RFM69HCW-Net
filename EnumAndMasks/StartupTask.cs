@@ -123,7 +123,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 
 		// RegOpMode mode flags
-		[Flags]
 		public enum RegOpModeSequencer : byte
 		{
 			Off = 0b00000000,
@@ -131,7 +130,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 		public const bool RegOpModeSequencerDefault = false;
 
-		[Flags]
 		public enum RegOpModeListen : byte
 		{
 			Off = 0b00000000,
@@ -141,7 +139,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		private const byte RegOpModeListenAbort = 0b00100000;
 
-		[Flags]
 		public enum RegOpModeMode : byte
 		{
 			Sleep = 0b00000000,
@@ -153,24 +150,23 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		public const RegOpModeMode RegOpModeModeDefault = RegOpModeMode.StandBy;
 
 		// RegDataModul
-		[Flags]
 		public enum DataMode : byte
 		{
 			PacketMode = 0b00000000,
+			// Reserved 01
 			ContinuousWithBitSynchroniser = 0b01000000,
 			ContinuousWithourBitSynchroniser = 0b01100000,
 		}
 		const DataMode DataModeDefault = DataMode.PacketMode;
 
-		[Flags]
 		public enum ModulationType
 		{
 			Fsk = 0b00000000,
 			Ook = 0b00001000
+			// Reserved 10,11
 		}
 		public const ModulationType ModulationTypeDefault = ModulationType.Fsk;
 
-		[Flags]
 		public enum ModulationShapingFsk
 		{
 			NoShaping = 0b00000000,
@@ -180,12 +176,12 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 		public const ModulationShapingFsk modulationShapingFskDefault = ModulationShapingFsk.NoShaping;
 
-		[Flags]
 		public enum ModulationShapingOok
 		{
 			NoShaping = 0b00000000,
 			FilteringCutoffBR = 0b00000001,
 			FilteringCutoff2BR = 0b00000010,
+			// Reserved 11
 		}
 		public const ModulationShapingOok modulationShapingOokDefault = ModulationShapingOok.NoShaping;
 
@@ -223,7 +219,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		// RegOsc1 settings
 		private const byte RcCalStart = 0b10000000;
 
-		[Flags]
 		private enum RcCal : byte
 		{
 			InProgress = 0b00000000,
@@ -231,7 +226,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 
 		// RegAfcCtrl settings
-		[Flags]
 		public enum AfcLowBeta : byte
 		{
 			Standard = 0b00000000,
@@ -240,27 +234,24 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		public const AfcLowBeta AfcLowBetaDefault = AfcLowBeta.Standard;
 
 		// RegListen1 settings
-		[Flags]
 		public enum ListenModeIdleResolution : byte
 		{
-			Reserved = 0b00000000,
+			// Reserved = 00
 			Time64us = 0b01000000,
 			Time4_1ms = 0b10000000,
 			Time262ms = 0b11000000,
 		}
 		const ListenModeIdleResolution ListenModeIdleResolutionDefault = ListenModeIdleResolution.Time4_1ms;
 
-		[Flags]
 		public enum ListenModeRXTime : byte
 		{
-			Reserved = 0b00000000,
+			// Reserved
 			IdleTime64us = 0b00010000,
 			IdleTime4_1ms = 0b00100000,
 			IdleTime262ms = 0b00110000,
 		}
 		const ListenModeRXTime ListenModeRXTimeDefault = ListenModeRXTime.IdleTime64us;
 
-		[Flags]
 		public enum ListenModeCriteria : byte
 		{
 			RssiThreshold = 0b00000000,
@@ -268,12 +259,12 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 		const ListenModeCriteria ListenModeCriteriaDefault = ListenModeCriteria.RssiThreshold;
 
-		[Flags]
 		public enum ListenModeEnd : byte
 		{
 			StayInRXMode = 0b00000000,
 			StayInRxModeUntilPayloadReady = 0b00000010,
 			StayInRxModeUntilPayloadReadyOrTimeoutInterrupt = 0b00000100,
+			// Reserved 11
 		}
 		const ListenModeEnd ListenModeEndDefault = ListenModeEnd.StayInRxModeUntilPayloadReadyOrTimeoutInterrupt;
 
@@ -359,6 +350,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			G4 = 0b00000100,
 			G5 = 0b00000101,
 			G6 = 0b00000110,
+			// Reserved
 		}
 		const LnaGainSelect LnaGainSelectDefault = LnaGainSelect.AGC;
 
@@ -370,6 +362,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			RxBwMant16 = 0b00000000,
 			RxBwMant20 = 0b00001000,
 			RxBwMant24 = 0b00010000,
+			// Reserved
 		}
 		const RxBwMant RxBwMantDefault = RxBwMant.RxBwMant24;
 
@@ -386,24 +379,22 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		// RegFeiMsb, RegFeiLsb
 
 		// RegDioMapping1 & RegDioMapping1 Continuous Mode Table 21/ Packet Mode Table 22 pg48
+		// RegDioMapping1 Bits 7&6
 		public enum SleepDio0Mapping : byte
 		{
 			// unused
 		}
 
-		[Flags]
 		public enum StandByDio0Mapping : byte
 		{
 			// unused
 		}
 
-		[Flags]
 		public enum FrequencySynthesisDio0Mapping : byte
 		{
 			PllLock = 0b11000000,
 		}
 
-		[Flags]
 		public enum ReceiveDio0Mapping : byte
 		{
 			CrcOk = 0b00000000,
@@ -412,7 +403,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			Rssi = 0b11000000,
 		}
 
-		[Flags]
 		public enum TransmitMappingDio0Mapping : byte
 		{
 			PacketSent = 0b00000000,
@@ -421,7 +411,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			PllLock = 0b11000000,
 		}
 
-		[Flags]
+		// RegDioMapping1 Bits 5&4
 		public enum SleepDio1Mapping : byte
 		{
 			FifoLevel = 0b00000000,
@@ -430,7 +420,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			// unused
 		}
 
-		[Flags]
 		public enum StandbyDio1Mapping : byte
 		{
 			FifoLevel = 0b00000000,
@@ -439,7 +428,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			// unused
 		}
 
-		[Flags]
 		public enum FrequencySynthesisDio1Mapping : byte
 		{
 			FifoLevel = 0b00000000,
@@ -448,7 +436,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			PllLock = 0b00110000,
 		}
 
-		[Flags]
 		public enum ReceiveDio1Mapping : byte
 		{
 			FifoLevel = 0b00000000,
@@ -457,7 +444,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			Timeout = 0b00110000,
 		}
 
-		[Flags]
 		public enum TransmitDio1Mapping : byte
 		{
 			FifoLevel = 0b00000000,
@@ -465,76 +451,65 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			FifoNotEmpty = 0b00100000,
 			PllLock = 0b00110000,
 		}
-		
-		[Flags]
+
+		// RegDioMapping1 Bits 3&2
 		public enum SleepDio2Mapping : byte
 		{
 			FifoNotEmpty = 0b00000000,
 			// unused
 			AutoMode = 0b00001100,
-			// unused
 		}
 
-		[Flags]
 		public enum StandbyDio2Mapping : byte
 		{
 			FifoNotEmpty = 0b00000000,
 			// unused
 			AutoMode = 0b00001100,
-			// unused
 		}
 
-		[Flags]
 		public enum FrequencySynthesisDio2Mapping : byte
 		{
 			FifoNotEmpty = 0b00000000,
 			// unused
 			AutoMode = 0b00001100,
-			// unused
 		}
 
-		[Flags]
 		public enum ReceiveDio2Mapping : byte
 		{
 			FifoNotEmpty = 0b00000000,
+			// unused			
 			Data = 0b00001000,
-			// unused
 			AutoMode = 0b00001100,
 		}
 
-		[Flags]
 		public enum TransmitDio2Mapping : byte
 		{
 			FifoNotEmpty = 0b00000000,
-			Data = 0b00001000,
 			// unused
+			Data = 0b00001000,
 			AutoMode = 0b00001100,
 		}
 
-		[Flags]
+		// RegDioMapping1 Bits 1&0
 		public enum SleepDio3Mapping : byte
 		{
-			FifoLevel = 0b00000000,
-			FifoFull = 0b00000100,
-			FifoNotEmpty = 0b00001000,
+			FifoFull = 0b00000000,
 			// unused
 		}
 
-		[Flags]
 		public enum StandbyDio3Mapping : byte
 		{
 			FifoFull = 0b00000000,
 			// unused
 		}
 
-		[Flags]
 		public enum FrequencySynthesisDio3Mapping : byte
 		{
 			FifoFull = 0b00000000,
 			// unused
+			PllLock = 0b0000011
 		}
 
-		[Flags]
 		public enum ReceiveDio3Mapping : byte
 		{
 			FifoFull = 0b00000000,
@@ -543,7 +518,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			PllLock = 0b0000011,
 		}
 
-		[Flags]
 		public enum TransmitDio3Mapping : byte
 		{
 			FifoFull = 0b00000000,
@@ -552,35 +526,31 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			PllLock = 0b00000011,
 		}
 
-		[Flags]
+		// RegDioMapping2 Bits 7&6
 		public enum SleepDio4Mapping : byte
 		{
 			// unused
 		}
 
-		[Flags]
 		public enum StandbyDio4Mapping : byte
 		{
 			// unused
 		}
 
-		[Flags]
 		public enum FrequencySynthesisDio4Mapping : byte
 		{
 			// unsued
 			PllLock = 0b11000000,
 		}
 
-		[Flags]
 		public enum ReceiveDio4Mapping : byte
 		{
-			Timeout = 0b11000000,
-			Rssi = 0b00000000,
-			RxReady = 0b01000000,
-			PllLock = 0b10000000,
+			Timeout = 0b00000000,
+			Rssi = 0b01000000,
+			RxReady = 0b10000000,
+			PllLock = 0b11000000,
 		}
 
-		[Flags]
 		public enum TransmitDio4Mapping : byte
 		{
 			ModeReady = 0b00000000,
@@ -589,14 +559,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			PllLock = 0b11000000,
 		}
 
-		[Flags]
+		// RegDioMapping2 Bits 5&4
 		public enum SleepDio5Mapping : byte
 		{
 			// unused
 			ModeReady = 0b00000000,
 		}
 
-		[Flags]
 		public enum StandbyDio5Mapping : byte
 		{
 			ClkOut = 0b00000000,
@@ -604,7 +573,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			ModeReady = 0b00110000,
 		}
 
-		[Flags]
 		public enum FrequencySynthesisDio5Mapping : byte
 		{
 			ClkOut = 0b00000000,
@@ -612,7 +580,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			ModeReady = 0b00110000,
 		}
 
-		[Flags]
 		public enum ReceiveDio5Mapping : byte
 		{
 			ClkOut = 0b00000000,
@@ -621,7 +588,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			ModeReady = 0b00110000,
 		}
 
-		[Flags]
 		public enum TransmitDio5Mapping : byte
 		{
 			ClkOut = 0b00000000,
@@ -630,6 +596,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			ModeReady = 0b00110000,
 		}
 
+		// RegDioMapping2 Bits 2-0
 		public enum ClockOutDioMapping : byte
 		{
 			FXOsc = 0b00000000,
@@ -670,6 +637,15 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			// Unused = 0b00000001
 		}
 
+		// RegRssiThresh 
+		const ushort RegRssiThreshholdDefault = 0xE4;
+
+		// RegsRxTimeout1
+		const ushort RegRxTimeout1Default = 0x00;
+
+		// RegsRxTimeout2
+		const ushort RegRxTimeout2Default = 0x00;
+
 		// RegPreambleMsb
 		const ushort PreambleSizeDefault = 0x03;
 
@@ -680,6 +656,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			Off = 0b00000000,
 			On = 0b10000000
 		}
+		const bool RegSyncConfigSyncOnDefault = true;
 
 		public enum RegSyncConfigFifoFileCondition
 		{
@@ -734,7 +711,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			None = 0b00000000,
 			NodeAddress = 0b00000010,
 			NodeAddressOrBroadcastAddress = 0b00000100,
-			Reserved = 0b00000110
+			// Reserved = 11
 		}
 		const RegPacketConfig1CrcAddressFiltering PacketAddressFilteringDefault = RegPacketConfig1CrcAddressFiltering.None;
 
@@ -760,7 +737,9 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		};
 		const TxStartCondition TxStartConditionDefault = TxStartCondition.FifoNotEmpty;
 
-		const byte FifoThresholdDefault = 0b00001111;
+		const byte FifoThresholdDefault = 0xF;
+		const byte FifoThresholdMinimum = 0x0;
+		const byte FifoThresholdaximum = 0x7E;
 
 
 		// RegPacketConfig2
@@ -768,14 +747,12 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		public const byte InterPacketRxDelayMinimum = 0x0;
 		public const byte InterPacketRxDelayMaximum = 0xF;
 
-		[Flags]
 		private enum RegPacketConfig2RestartRx : byte
 		{
 			Off = 0b00000000,
 			On = 0b00000100,
 		}
 
-		[Flags]
 		private enum RegPacketConfig2AutoRestartRx : byte
 		{
 			Off = 0b00000000,
@@ -783,7 +760,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		}
 		private const bool AutoRestartRxDefault = true;
 
-		[Flags]
 		private enum RegPacketConfig2Aes : byte
 		{
 			Off = 0b00000000,
@@ -802,7 +778,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		private bool AesEnabled = false;
 		private GpioPin InterruptGpioPin = null;
 		private GpioPin ResetGpioPin = null;
-		private GpioPin PacketReceivedGpioPin = null;
 		public RegisterManager RegisterManager = null; // Future refactor this will be made private
 		private bool InterruptProccessing = false;
 
@@ -826,10 +801,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			// Interrupt pin for RX message & TX done notification 
 			InterruptGpioPin = gpioController.OpenPin(interruptPin);
 			InterruptGpioPin.SetDriveMode(GpioPinDriveMode.Input);
-
-			// Temporary display of inbound packet
-			PacketReceivedGpioPin = gpioController.OpenPin(47);
-			PacketReceivedGpioPin.SetDriveMode(GpioPinDriveMode.Output);
 
 			InterruptGpioPin.ValueChanged += InterruptGpioPin_ValueChanged;
 		}
@@ -902,7 +873,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			AddressingEnabled = (addressNode.HasValue || addressbroadcast.HasValue);
 			AesEnabled = (aesKey != null);
 
-			#region RegSyncConfig + RegSyncValue1 to RegSyncValue8 guard conditions
+#region RegSyncConfig + RegSyncValue1 to RegSyncValue8 guard conditions
 			if (syncValues != null)
 			{
 				// If sync enabled (i.e. SyncValues array provided) check that SyncValues not to short/long and SyncTolerance not to small/big
@@ -931,9 +902,9 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 					throw new ArgumentException($"If Sync not enabled SyncTolerance is not supported", "syncTolerance");
 				}
 			}
-			#endregion
+#endregion
 
-			#region RegPacketConfig2 + RegAesKey1 to RegAesKey16 guard conditions
+#region RegPacketConfig2 + RegAesKey1 to RegAesKey16 guard conditions
 			if ((interPacketRxDelay < InterPacketRxDelayMinimum ) || (interPacketRxDelay > InterPacketRxDelayMaximum))
 			{
 				throw new ArgumentException($"The interPacketRxDelay must be between {InterPacketRxDelayMinimum} and {InterPacketRxDelayMaximum}", "interPacketRxDelay");
@@ -942,7 +913,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			{
 				throw new ArgumentException($"The AES key must be {AesKeyLength} bytes", "aesKey");
 			}
-			#endregion
+#endregion
 
 			// Strobe Reset pin briefly to factory reset SX1231 chip
 			ResetGpioPin.Write(GpioPinValue.High);
@@ -1258,8 +1229,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 			//SetMode(RegOpModeMode.StandBy);
 
-			PacketReceivedGpioPin.Write(GpioPinValue.High);
-
 			// Read the length of the buffer if variable length packets
 			if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 			{
@@ -1289,8 +1258,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 			string messageText = UTF8Encoding.UTF8.GetString(messageBytes);
 			Debug.WriteLine("{0:HH:mm:ss} Received {1} byte message {2}", DateTime.Now, messageBytes.Length, messageText);
-
-			PacketReceivedGpioPin.Write(GpioPinValue.Low);
 
 			//SetMode(RegOpModeMode.Receive);
 		}
@@ -1335,7 +1302,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		public void SendMessage(byte[] messageBytes)
 		{
-			#region Guard conditions
+#region Guard conditions
 			if (AddressingEnabled)
 			{
 				throw new ApplicationException("Addressed message mode enabled");
@@ -1355,7 +1322,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 					throw new ArgumentException($"Payload maximum {PayloadLengthMaximum} bytes", "messageBytes");
 				}
 			}
-			#endregion
+#endregion
 
 			SetMode(RegOpModeMode.StandBy);
 
@@ -1374,7 +1341,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 
 		public void SendMessage(byte address, byte[] messageBytes)
 		{
-			#region Guard conditions
+#region Guard conditions
 			if ( !AddressingEnabled)
 			{
 				throw new ApplicationException("Addressed message mode not enabled");
@@ -1394,7 +1361,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 					throw new ArgumentException($"Payload maximum {PayloadLengthAesEnabledMaximum} bytes when addressing enabled", "messageBytes");
 				}
 			}
-			#endregion
+#endregion
 
 			SetMode(RegOpModeMode.StandBy);
 
