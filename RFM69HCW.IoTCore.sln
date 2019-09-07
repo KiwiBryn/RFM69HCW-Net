@@ -37,7 +37,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "11.RefactorRegisterManager"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "12.EnumAndMasks", "EnumAndMasks\12.EnumAndMasks.csproj", "{07440F0A-37BE-4B5E-89CC-6297D800FDB6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReceiveTransmitEvents", "ReceiveTransmitEvents\ReceiveTransmitEvents.csproj", "{5C3DF76B-B5E4-4B1F-9F49-F8B20D7AD489}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "13.ReceiveTransmitEvents", "ReceiveTransmitEvents\13.ReceiveTransmitEvents.csproj", "{5C3DF76B-B5E4-4B1F-9F49-F8B20D7AD489}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

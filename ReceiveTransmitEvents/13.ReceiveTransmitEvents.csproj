@@ -7,7 +7,7 @@
     <ProjectGuid>{5C3DF76B-B5E4-4B1F-9F49-F8B20D7AD489}</ProjectGuid>
     <OutputType>winmdobj</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ReceiveTransmitEvents</RootNamespace>
+    <RootNamespace>devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents</RootNamespace>
     <AssemblyName>ReceiveTransmitEvents</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
@@ -95,6 +95,7 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="RegisterManager.cs" />
     <Compile Include="StartupTask.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
