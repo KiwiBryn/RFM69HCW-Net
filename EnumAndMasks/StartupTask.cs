@@ -378,223 +378,75 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		// RegAfcMsb, RegAfcLsb
 		// RegFeiMsb, RegFeiLsb
 
-		// RegDioMapping1 & RegDioMapping1 Continuous Mode Table 21/ Packet Mode Table 22 pg48
-		// RegDioMapping1 Bits 7&6
-		public enum SleepDio0Mapping : byte
+		// RegDioMapping1 & RegDioMapping2 Packet Mode Table 22 pg48
+		// DIO 0 Bits 7&6 of RegDioMapping1
+		[Flags]
+		public enum Dio0Mapping
 		{
-			// unused
+			// Sleep
+			// Standby
+			// Frequency Synthesis
+			// Reserved 00-10
+			FrequencySynthesisPllLock = 0b11000000,
+			ReceiveCrcOk = 0b00000000,
+			ReceivePayloadReady = 0b01000000,
+			ReceiveSyncAddress = 0b10000000,
+			ReceiveRssi = 0b11000000,
+			TransmitPacketSent = 0b00000000,
+			TransmitTxReady = 0b01000000,
+			// Reserved 10
+			PllLock = 0b11000000
 		}
+		const Dio0Mapping Dio0MappingDefault = 0x00;
 
-		public enum StandByDio0Mapping : byte
+		// DIO 1 Bits 5&4 of RegDioMapping1
+		public enum Dio1Mapping
 		{
-			// unused
+			SleepFifoLevel = 0b00000000,
+			SleepFifoFull = 0b00010000,
+			SleepFifoNotEmpty = 0b00100000,
+			// Reserved 11
+			StandByFifoLevel = 0b00000000,
+			StandByFifoFull = 0b00010000,
+			StandByFifoNotEmpty = 0b00100000,
+			FrequencySynthesisFifoLevel = 0b00000000,
+			FrequencySynthesisFifoFull = 0b00010000,
+			FrequencySynthesisFifoNotEmpty = 0b00100000,
+			FrequencySynthesisPllLock = 0b00110000,
+			ReceiveFifoLevel = 0b00000000,
+			ReceiveFifoFull = 0b00010000,
+			ReceiveFifoNotEmpty = 0b00100000,
+			ReceiveTimeout = 0b00110000,
+			TransmitFifoLevel = 0b00000000,
+			TransmitFifoFull = 0b00010000,
+			TransmitFifoNotEmpty = 0b00100000,
+			TransmitPllLock = 0b00110000,
 		}
+		const Dio1Mapping Dio1MappingDefault = 0x00;
 
-		public enum FrequencySynthesisDio0Mapping : byte
+		// DIO 2 Bits 3&2 of RegDioMapping1
+		public enum Dio2Mapping
 		{
-			PllLock = 0b11000000,
 		}
+		const Dio2Mapping Dio2MappingDefault = 0x00;
 
-		public enum ReceiveDio0Mapping : byte
+		// DIO 2 Bits 1&0 of RegDioMapping1
+		public enum Dio3Mapping
 		{
-			CrcOk = 0b00000000,
-			PayloadReady = 0b01000000,
-			SyncAddress = 0b10000000,
-			Rssi = 0b11000000,
 		}
+		const Dio3Mapping Dio3MappingDefault = 0x00;
 
-		public enum TransmitMappingDio0Mapping : byte
+		// DIO 2 Bits 7&6 of RegDioMapping2
+		public enum Dio4Mapping
 		{
-			PacketSent = 0b00000000,
-			TxReady = 0b01000000,
-			// unused
-			PllLock = 0b11000000,
 		}
+		const Dio4Mapping Dio4MappingDefault = 0x00;
 
-		// RegDioMapping1 Bits 5&4
-		public enum SleepDio1Mapping : byte
+		// DIO 2 Bits 5&4 of RegDioMapping2
+		public enum Dio5Mapping
 		{
-			FifoLevel = 0b00000000,
-			FifoFull = 0b00010000,
-			FifoNotEmpty = 0b00100000,
-			// unused
 		}
-
-		public enum StandbyDio1Mapping : byte
-		{
-			FifoLevel = 0b00000000,
-			FifoFull = 0b00010000,
-			FifoNotEmpty = 0b00100000,
-			// unused
-		}
-
-		public enum FrequencySynthesisDio1Mapping : byte
-		{
-			FifoLevel = 0b00000000,
-			FifoFull = 0b00010000,
-			FifoNotEmpty = 0b00100000,
-			PllLock = 0b00110000,
-		}
-
-		public enum ReceiveDio1Mapping : byte
-		{
-			FifoLevel = 0b00000000,
-			FifoFull = 0b00010000,
-			FifoNotEmpty = 0b00100000,
-			Timeout = 0b00110000,
-		}
-
-		public enum TransmitDio1Mapping : byte
-		{
-			FifoLevel = 0b00000000,
-			FifoFull = 0b00010000,
-			FifoNotEmpty = 0b00100000,
-			PllLock = 0b00110000,
-		}
-
-		// RegDioMapping1 Bits 3&2
-		public enum SleepDio2Mapping : byte
-		{
-			FifoNotEmpty = 0b00000000,
-			// unused
-			AutoMode = 0b00001100,
-		}
-
-		public enum StandbyDio2Mapping : byte
-		{
-			FifoNotEmpty = 0b00000000,
-			// unused
-			AutoMode = 0b00001100,
-		}
-
-		public enum FrequencySynthesisDio2Mapping : byte
-		{
-			FifoNotEmpty = 0b00000000,
-			// unused
-			AutoMode = 0b00001100,
-		}
-
-		public enum ReceiveDio2Mapping : byte
-		{
-			FifoNotEmpty = 0b00000000,
-			// unused			
-			Data = 0b00001000,
-			AutoMode = 0b00001100,
-		}
-
-		public enum TransmitDio2Mapping : byte
-		{
-			FifoNotEmpty = 0b00000000,
-			// unused
-			Data = 0b00001000,
-			AutoMode = 0b00001100,
-		}
-
-		// RegDioMapping1 Bits 1&0
-		public enum SleepDio3Mapping : byte
-		{
-			FifoFull = 0b00000000,
-			// unused
-		}
-
-		public enum StandbyDio3Mapping : byte
-		{
-			FifoFull = 0b00000000,
-			// unused
-		}
-
-		public enum FrequencySynthesisDio3Mapping : byte
-		{
-			FifoFull = 0b00000000,
-			// unused
-			PllLock = 0b0000011
-		}
-
-		public enum ReceiveDio3Mapping : byte
-		{
-			FifoFull = 0b00000000,
-			Rssi = 0b00000001,
-			SyncAddress = 0b00000010,
-			PllLock = 0b0000011,
-		}
-
-		public enum TransmitDio3Mapping : byte
-		{
-			FifoFull = 0b00000000,
-			TxReady = 0b00000001,
-			// unused
-			PllLock = 0b00000011,
-		}
-
-		// RegDioMapping2 Bits 7&6
-		public enum SleepDio4Mapping : byte
-		{
-			// unused
-		}
-
-		public enum StandbyDio4Mapping : byte
-		{
-			// unused
-		}
-
-		public enum FrequencySynthesisDio4Mapping : byte
-		{
-			// unsued
-			PllLock = 0b11000000,
-		}
-
-		public enum ReceiveDio4Mapping : byte
-		{
-			Timeout = 0b00000000,
-			Rssi = 0b01000000,
-			RxReady = 0b10000000,
-			PllLock = 0b11000000,
-		}
-
-		public enum TransmitDio4Mapping : byte
-		{
-			ModeReady = 0b00000000,
-			TxReady = 0b01000000,
-			// unused
-			PllLock = 0b11000000,
-		}
-
-		// RegDioMapping2 Bits 5&4
-		public enum SleepDio5Mapping : byte
-		{
-			// unused
-			ModeReady = 0b00000000,
-		}
-
-		public enum StandbyDio5Mapping : byte
-		{
-			ClkOut = 0b00000000,
-			// unused
-			ModeReady = 0b00110000,
-		}
-
-		public enum FrequencySynthesisDio5Mapping : byte
-		{
-			ClkOut = 0b00000000,
-			// unused
-			ModeReady = 0b00110000,
-		}
-
-		public enum ReceiveDio5Mapping : byte
-		{
-			ClkOut = 0b00000000,
-			Data = 0b00010000,
-			// unused
-			ModeReady = 0b00110000,
-		}
-
-		public enum TransmitDio5Mapping : byte
-		{
-			ClkOut = 0b00000000,
-			Data = 0b00010000,
-			// unused
-			ModeReady = 0b00110000,
-		}
+		const Dio5Mapping Dio5MappingDefault = 0x00;
 
 		// RegDioMapping2 Bits 2-0
 		public enum ClockOutDioMapping : byte
@@ -608,6 +460,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			RC = 0b00000110,
 			Off = 0b00000111,
 		}
+		public const ClockOutDioMapping ClockOutDioMappingDefault = ClockOutDioMapping.Off;
 
 		// RegIrqFlags1
 		[Flags]
@@ -772,6 +625,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 		private RegOpModeMode RegOpModeModeCurrent = RegOpModeMode.Sleep;
 		private RegOpModeSequencer Sequencer = RegOpModeSequencer.Off;
 		private RegOpModeListen Listen =  RegOpModeListen.Off;
+		private Dio0Mapping Dio0 = Dio0MappingDefault;
+		private Dio1Mapping Dio1 = Dio1MappingDefault;
+		private Dio2Mapping Dio2 = Dio2MappingDefault;
+		private Dio3Mapping Dio3 = Dio3MappingDefault;
+		private Dio4Mapping Dio4 = Dio4MappingDefault;
+		private Dio5Mapping Dio5 = Dio5MappingDefault;
+		private ClockOutDioMapping ClockOutDio = ClockOutDioMappingDefault;
 		private RegPacketConfig1PacketFormat PacketFormat = RegPacketConfig1PacketFormatDefault;
 		private Byte PayloadLength;
 		private bool AddressingEnabled = false;
@@ -838,6 +698,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			LnaZin lnaZin = LnaZinDefault, LnaCurrentGain lnaCurrentGain = LnaCurrentGainDefault, LnaGainSelect lnaGainSelect = LnaGainSelectDefault,
 			byte dccFrequency = DccFrequencyDefault, RxBwMant rxBwMant = RxBwMantDefault, byte RxBwExp = RxBwExpDefault,
 			byte dccFreqAfc = DccFreqAfcDefault, byte rxBwMantAfc = RxBwMantAfcDefault, byte bxBwExpAfc = RxBwExpAfcDefault,
+			Dio0Mapping dio0Mapping = Dio0MappingDefault,
+			Dio1Mapping dio1Mapping = Dio1MappingDefault,
+			Dio2Mapping dio2Mapping = Dio2MappingDefault,
+			Dio3Mapping dio3Mapping = Dio3MappingDefault,
+			Dio4Mapping dio4Mapping = Dio4MappingDefault,
+			Dio5Mapping dio5Mapping = Dio5MappingDefault,
+			ClockOutDioMapping clockOutDioMapping = ClockOutDioMappingDefault,
 			ushort preambleSize = PreambleSizeDefault,
 			RegSyncConfigFifoFileCondition? syncFifoFileCondition = null, byte? syncTolerance = null, byte[] syncValues = null,
 			RegPacketConfig1PacketFormat packetFormat = RegPacketConfig1PacketFormat.FixedLength,
@@ -868,6 +735,13 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			{
 				Listen = RegOpModeListen.Off;
 			}
+			Dio0 = dio0Mapping;
+			Dio1 = dio1Mapping;
+			Dio2 = dio2Mapping;
+			Dio3 = dio3Mapping;
+			Dio4 = dio4Mapping;
+			Dio5 = dio5Mapping;
+			ClockOutDio = clockOutDioMapping;
 			PacketFormat = packetFormat;
 			PayloadLength = payloadLength;
 			AddressingEnabled = (addressNode.HasValue || addressbroadcast.HasValue);
@@ -1066,8 +940,32 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			}
 
 			// RegDioMapping1
+			if ((dio0Mapping != Dio0MappingDefault) ||
+				 (dio1Mapping != Dio1MappingDefault) ||
+			    (dio2Mapping != Dio2MappingDefault) ||
+			    (dio3Mapping != Dio3MappingDefault))
+			{
+				byte regDioMapping1Value = (byte)dio0Mapping;
+
+				regDioMapping1Value |= (byte)dio1Mapping;
+				regDioMapping1Value |= (byte)dio2Mapping;
+				regDioMapping1Value |= (byte)dio3Mapping;
+
+				RegisterManager.WriteByte((byte)Registers.RegDioMapping1, regDioMapping1Value);
+			}
 
 			// RegDioMapping2
+			if ((dio4Mapping != Dio4MappingDefault) ||
+				 (dio5Mapping != Dio5MappingDefault) ||
+				 (clockOutDioMapping != ClockOutDioMappingDefault ))
+			{
+				byte regDioMapping2Value = (byte)dio4Mapping;
+
+				regDioMapping2Value |= (byte)dio5Mapping;
+				regDioMapping2Value |= (byte)clockOutDioMapping;
+
+				RegisterManager.WriteByte((byte)Registers.RegDioMapping2, regDioMapping2Value);
+			}
 
 			// RegPreambleMsb RegPreambleLsb settings
 			if (preambleSize != PreambleSizeDefault)
@@ -1300,6 +1198,62 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 			InterruptProccessing = false;
 		}
 
+		public void SetDioPinMapping(Dio0Mapping dio0Mapping = Rfm69HcwDevice.Dio0MappingDefault,
+											Dio1Mapping dio1Mapping = Rfm69HcwDevice.Dio1MappingDefault,
+											Dio2Mapping dio2Mapping = Rfm69HcwDevice.Dio2MappingDefault,
+											Dio3Mapping dio3Mapping = Rfm69HcwDevice.Dio3MappingDefault,
+											Dio4Mapping dio4Mapping = Rfm69HcwDevice.Dio4MappingDefault,
+											Dio5Mapping dio5Mapping = Rfm69HcwDevice.Dio5MappingDefault)
+		{
+			if ((dio0Mapping != this.Dio0) ||
+				 (dio1Mapping != this.Dio1) ||
+				 (dio2Mapping != this.Dio2) ||
+				 (dio3Mapping != this.Dio3))
+			{
+				this.Dio0 = dio0Mapping;
+				this.Dio1 = dio1Mapping;
+				this.Dio2 = dio2Mapping;
+				this.Dio3 = dio3Mapping;
+
+				byte regDioMapping1Value = (byte)dio0Mapping;
+
+				regDioMapping1Value |= (byte)dio1Mapping;
+				regDioMapping1Value |= (byte)dio2Mapping;
+				regDioMapping1Value |= (byte)dio3Mapping;
+
+				RegisterManager.WriteByte((byte)Registers.RegDioMapping1, regDioMapping1Value);
+			}
+
+			// RegDioMapping2
+			if ((dio4Mapping != this.Dio4) ||
+				 (dio5Mapping != this.Dio5))
+			{
+				this.Dio4 = dio4Mapping;
+				this.Dio5 = dio5Mapping;
+
+				byte regDioMapping2Value = (byte)dio4Mapping;
+				regDioMapping2Value |= (byte)dio5Mapping;
+				regDioMapping2Value |= (byte)this.ClockOutDio;
+
+				RegisterManager.WriteByte((byte)Registers.RegDioMapping2, regDioMapping2Value);
+			}
+		}
+
+		public void SetClockOutMapping(ClockOutDioMapping clockOutDioMapping)
+		{
+			// RegDioMapping2
+			if (clockOutDioMapping != this.ClockOutDio)
+			{
+				this.ClockOutDio = clockOutDioMapping;
+
+				byte regDioMapping2Value = (byte)this.Dio4;
+				regDioMapping2Value |= (byte)this.Dio5;
+				regDioMapping2Value |= (byte)clockOutDioMapping;
+
+				RegisterManager.WriteByte((byte)Registers.RegDioMapping2, regDioMapping2Value);
+			}
+		}
+
 		public void SendMessage(byte[] messageBytes)
 		{
 #region Guard conditions
@@ -1416,6 +1370,7 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 												bitRate: Rfm69HcwDevice.BitRate.bps4K8,
 												frequency: 915000000.0, frequencyDeviation: 0X023d,
 												dccFrequency: 0x1,rxBwMant: Rfm69HcwDevice.RxBwMant.RxBwMant20, RxBwExp:0x2,
+												dio0Mapping : Rfm69HcwDevice.Dio0Mapping.ReceiveCrcOk,
 												preambleSize: 16,
 												syncValues: syncValues,
 												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
@@ -1424,9 +1379,6 @@ namespace devMobile.IoT.Rfm69Hcw.EnumAndMasks
 												//addressbroadcast: 0x99//,
 												//aesKey: aesKeyValues
 												);
-
-				// RegDioMapping1
-				rfm69Device.RegisterManager.WriteByte(0x25, 0x00); 
 
 				rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 
