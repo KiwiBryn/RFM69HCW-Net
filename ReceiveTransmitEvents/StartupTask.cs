@@ -1401,13 +1401,13 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			{
 				rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy,
 												bitRate: Rfm69HcwDevice.BitRate.bps4K8,
-												frequency: 915000000.0, frequencyDeviation: 0X023d,
+												frequency: 909560000.0, frequencyDeviation: 0X023d,
 												dccFrequency: 0x1, rxBwMant: Rfm69HcwDevice.RxBwMant.RxBwMant20, RxBwExp: 0x2,
 												dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceiveCrcOk,
 												preambleSize: 16,
 												syncValues: syncValues,
 												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
-												autoRestartRx: false
+												autoRestartRx: false,
 												addressNode: 0x66,
 												addressbroadcast: 0x99//,
 												//aesKey: aesKeyValues
@@ -1472,13 +1472,27 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			{
 				Debug.WriteLine(ex.Message);
 			}
+
+			if (currentEvent - LastEvent > new TimeSpan(0, 0, 4))
+			{
+				Debug.WriteLine("T--------------------------------------------");
+			}
+			LastEvent = currentEvent;
 		}
 
 		private void Rfm69Device_OnTransmit(object sender, Rfm69HcwDevice.OnDataTransmitedEventArgs e)
 		{
+			DateTime currentEvent = DateTime.Now;
+
 			rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 
-			Debug.WriteLine("Transmit-Done");
+			Debug.WriteLine("{0:HH:mm:ss.fff} Transmit-Done", DateTime.Now);
+
+			if (currentEvent - LastEvent > new TimeSpan(0, 0, 4))
+			{
+				Debug.WriteLine("T--------------------------------------------");
+			}
+			LastEvent = currentEvent;
 		}
 	}
 }
