@@ -1221,13 +1221,11 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			InterruptProccessing = true;
 
 			RegIrqFlags2 irqFlags2 = (RegIrqFlags2)RegisterManager.ReadByte((byte)Registers.RegIrqFlags2);
-			Debug.WriteLine("{0:HH:mm:ss.fff} RegIrqFlags2 {1}", DateTime.Now, Convert.ToString((byte)irqFlags2, 2).PadLeft(8, '0'));
-
-			RegIrqFlags1 irqFlags1 = (RegIrqFlags1)RegisterManager.ReadByte((byte)Registers.RegIrqFlags1);
-			Debug.WriteLine("{0:HH:mm:ss.fff} RegIrqFlags1 {1}", DateTime.Now, Convert.ToString((byte)irqFlags1, 2).PadLeft(8, '0'));
 
 			if ((irqFlags2 & RegIrqFlags2.PayloadReady) == RegIrqFlags2.PayloadReady)
 			{
+				RegIrqFlags1 irqFlags1 = (RegIrqFlags1)RegisterManager.ReadByte((byte)Registers.RegIrqFlags1);
+
 				ProcessPayloadReady(irqFlags1, irqFlags2);
 			}
 
@@ -1362,10 +1360,10 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			}
 			#endregion
 
-			SetMode(RegOpModeMode.StandBy);
-
 			lock (Rfm9XRegFifoLock)
 			{
+				SetMode(RegOpModeMode.StandBy);
+
 
 				if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 				{
@@ -1378,9 +1376,9 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 				{
 					this.RegisterManager.WriteByte((byte)Registers.RegFifo, b);
 				}
-			}
 
-			SetMode(RegOpModeMode.Transmit);
+				SetMode(RegOpModeMode.Transmit);
+			}
 		}
 	}
 
@@ -1408,7 +1406,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 												syncValues: syncValues,
 												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
 												autoRestartRx: false,
-												addressNode: 0x66,
+												addressNode: 0x22,
 												addressbroadcast: 0x99//,
 												//aesKey: aesKeyValues
 												);
@@ -1425,12 +1423,12 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 				{
 					if (true)
 					{
-						string message = "hello world " + DateTime.Now.ToLongTimeString();
+						string message = $"hello world {Environment.MachineName} {DateTime.Now:hh-mm-ss}";
 
 						byte[] messageBuffer = UTF8Encoding.UTF8.GetBytes(message);
 
 						Debug.WriteLine("{0:HH:mm:ss.fff} Send-{1}", DateTime.Now, message);
-						rfm69Device.SendMessage( 0x33, messageBuffer);
+						rfm69Device.SendMessage( 0x11, messageBuffer);
 						//rfm69Device.SendMessage(messageBuffer);
 
 						Debug.WriteLine("{0:HH:mm:ss.fff} Send-Done", DateTime.Now);
@@ -1475,7 +1473,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 			if (currentEvent - LastEvent > new TimeSpan(0, 0, 4))
 			{
-				Debug.WriteLine("T--------------------------------------------");
+				Debug.WriteLine("R--------------------------------------------");
 			}
 			LastEvent = currentEvent;
 		}
