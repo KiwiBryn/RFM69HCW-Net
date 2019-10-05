@@ -1141,7 +1141,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			SetMode(modeAfterInitialise);
 		}
 
-		private void ProcessPayloadReady(RegIrqFlags1 irqFlags1, RegIrqFlags2 irqFlags2)
+		private void ProcessPayloadReady(RegIrqFlags2 irqFlags2)
 		{
 			byte numberOfBytes;
 			bool crcValid;
@@ -1224,9 +1224,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 			if ((irqFlags2 & RegIrqFlags2.PayloadReady) == RegIrqFlags2.PayloadReady)
 			{
-				RegIrqFlags1 irqFlags1 = (RegIrqFlags1)RegisterManager.ReadByte((byte)Registers.RegIrqFlags1);
-
-				ProcessPayloadReady(irqFlags1, irqFlags2);
+				ProcessPayloadReady(irqFlags2);
 			}
 
 			if ((irqFlags2 & RegIrqFlags2.PacketSent) == RegIrqFlags2.PacketSent)  // PacketSent set
