@@ -397,6 +397,14 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 		// RegAfcMsb, RegAfcLsb
 		// RegFeiMsb, RegFeiLsb
 
+		//RegRssiConfig
+		[Flags]
+		public enum RssiConfig
+		{
+			RssiStart = 0b00000001,
+			RssiDone = 0b00000010
+		}
+
 		// RegDioMapping1 & RegDioMapping2 Packet Mode Table 22 pg48
 		// DIO 0 Bits 7&6 of RegDioMapping1
 		[Flags]
@@ -559,7 +567,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 		{
 			None = 0b00000000,
 			Manchester = 0b00100000,
-			Whitening = 0b0100000,
+			Whitening = 0b01000000,
 			Reserved = 0b01100000,
 		}
 		const RegPacketConfig1DcFree RegPacketConfig1DcFreeDefault = RegPacketConfig1DcFree.None;
@@ -1377,6 +1385,31 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 				SetMode(RegOpModeMode.Transmit);
 			}
+		}
+
+		public short Rssi(bool forceTrigger)
+		{
+			short rssi = 0;
+
+			// Based on 3.4.9. RSSI in SX1231 docs see RegRssiConfig & RegRssiValue
+			if (forceTrigger)
+			{
+				// RSSI trigger not needed if DAGC is in continuous mode
+				if (((AfcLowBeta)RegisterManager.ReadByte((byte)Registers.RegTestDagc) & AfcLowBeta.Improved) == 0x00)  
+				{
+					RegisterManager.WriteByte((byte)Registers.RegRssiConfig, (byte)RssiConfig.RssiStart);
+					while(((RssiConfig)RegisterManager.ReadByte((byte)Registers.RegRssiConfig) & RssiConfig.RssiDone) == 0x00)
+					{
+						Debug.Write('?');
+					}
+				}
+			}
+
+			// Adjust value based on "Absolute value of the RSSI in dbm, 0.5 db steps RSSI = -RssiValue/2[dBm]
+			rssi = (short)RegisterManager.ReadByte((byte)Registers.RegRssiValue);
+			rssi /= -2;
+
+			return rssi;
 		}
 	}
 
