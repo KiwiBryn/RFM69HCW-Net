@@ -1428,18 +1428,17 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 			try
 			{
-				rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy,
-												bitRate: Rfm69HcwDevice.BitRate.bps4K8,
-												frequency: 909560000.0, frequencyDeviation: 0X023d,
-												dccFrequency: 0x1, rxBwMant: Rfm69HcwDevice.RxBwMant.RxBwMant20, RxBwExp: 0x2,
-												dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceiveCrcOk,
-												preambleSize: 16,
-												syncValues: syncValues,
-												packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength,
-												autoRestartRx: false,
-												addressNode: 0x22,
-												addressbroadcast: 0x99//,
-												//aesKey: aesKeyValues
+				rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy
+												,frequency: 909560000.0 
+												,dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceiveCrcOk
+												,preambleSize: 16												
+												,syncValues: syncValues
+												,packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength
+												,packetDcFree: Rfm69HcwDevice.RegPacketConfig1DcFree.Whitening
+												,autoRestartRx: false
+												//,addressNode: 0x22
+												//,addressbroadcast: 0x99
+												//,aesKey: aesKeyValues
 												);
 
 				rfm69Device.OnReceive += Rfm69Device_OnReceive;
