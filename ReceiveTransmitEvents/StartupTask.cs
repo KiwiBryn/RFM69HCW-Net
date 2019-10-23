@@ -1158,7 +1158,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 			lock (Rfm9XRegFifoLock)
 			{
-				SetMode(RegOpModeMode.StandBy);
+				//SetMode(RegOpModeMode.StandBy);
 
 				crcValid = ((irqFlags2 & RegIrqFlags2.CrcOk) == RegIrqFlags2.CrcOk);
 
@@ -1181,13 +1181,8 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 					numberOfBytes--;
 				}
 
-				// Allocate a buffer for the payload and read characters from the Fifo
-				messageBytes = new byte[numberOfBytes];
-
-				for (int i = 0; i < numberOfBytes; i++)
-				{
-					messageBytes[i] = RegisterManager.ReadByte((byte)Rfm69HcwDevice.Registers.RegFifo);
-				}
+				// Read characters from the Fifo
+				messageBytes = RegisterManager.Read((byte)Rfm69HcwDevice.Registers.RegFifo, numberOfBytes);
 			}
 
 			if (this.OnReceive != null)
@@ -1229,6 +1224,12 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			InterruptProccessing = true;
 
 			RegIrqFlags2 irqFlags2 = (RegIrqFlags2)RegisterManager.ReadByte((byte)Registers.RegIrqFlags2);
+
+			SetMode(RegOpModeMode.StandBy);
+			while ((RegisterManager.ReadByte(0x27) & 0x80) == 0)
+			{
+				Debug.Write("+I");
+			}
 
 			if ((irqFlags2 & RegIrqFlags2.PayloadReady) == RegIrqFlags2.PayloadReady)
 			{
@@ -1324,19 +1325,16 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			#endregion
 
 			SetMode(RegOpModeMode.StandBy);
+			SetDioPinMapping(dio0Mapping: Dio0Mapping.TransmitPacketSent);
 
 			lock (Rfm9XRegFifoLock)
 			{
-
 				if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 				{
 					RegisterManager.WriteByte((byte)Registers.RegFifo, (byte)messageBytes.Length);
 				}
 
-				foreach (byte b in messageBytes)
-				{
-					this.RegisterManager.WriteByte((byte)Registers.RegFifo, b);
-				}
+				this.RegisterManager.Write((byte)Registers.RegFifo, messageBytes);
 			}
 
 			SetMode(RegOpModeMode.Transmit);
@@ -1344,7 +1342,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 		public void SendMessage(byte address, byte[] messageBytes)
 		{
-#region Guard conditions
+			#region Guard conditions
 			if (!AddressingEnabled)
 			{
 				throw new ApplicationException("Addressed message mode not enabled");
@@ -1366,11 +1364,15 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			}
 			#endregion
 
+			SetMode(RegOpModeMode.StandBy);
+			while ((RegisterManager.ReadByte(0x27) & 0x80) == 0)
+			{
+				Debug.Write("+I");
+			}
+			SetDioPinMapping(dio0Mapping: Dio0Mapping.TransmitPacketSent);
+
 			lock (Rfm9XRegFifoLock)
 			{
-				SetMode(RegOpModeMode.StandBy);
-
-
 				if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 				{
 					RegisterManager.WriteByte((byte)Registers.RegFifo, (byte)(messageBytes.Length + 1)); // Additional byte for address 
@@ -1378,13 +1380,9 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 				RegisterManager.WriteByte((byte)Registers.RegFifo, address);
 
-				foreach (byte b in messageBytes)
-				{
-					this.RegisterManager.WriteByte((byte)Registers.RegFifo, b);
-				}
-
-				SetMode(RegOpModeMode.Transmit);
+				this.RegisterManager.Write((byte)Registers.RegFifo, messageBytes);
 			}
+			SetMode(RegOpModeMode.Transmit);
 		}
 
 		public short Rssi(bool forceTrigger)
@@ -1430,7 +1428,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			{
 				rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy
 												,frequency: 909560000.0 
-												,dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceiveCrcOk
+												,dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceivePayloadReady
 												,preambleSize: 16												
 												,syncValues: syncValues
 												,packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength
@@ -1482,6 +1480,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 		{
 			DateTime currentEvent = DateTime.Now;
 
+			this.rfm69Device.SetDioPinMapping(dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceivePayloadReady);
 			this.rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 
 			try
@@ -1489,7 +1488,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 				string messageText = UTF8Encoding.UTF8.GetString(e.Data);
 				if (e.Address.HasValue)
 				{
-					Debug.WriteLine("{0:HH:mm:ss.fff} Received To {1} a {2} byte message {3} CRC Ok {4}", DateTime.Now, e.Address, e.Data.Length, messageText, e.CrcOk);
+					Debug.WriteLine("{0:HH:mm:ss.fff} Received To 0X{1:X2} a {2} byte message {3} CRC Ok {4}", DateTime.Now, e.Address, e.Data.Length, messageText, e.CrcOk);
 				}
 				else
 				{
@@ -1513,6 +1512,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			DateTime currentEvent = DateTime.Now;
 
 			rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
+			rfm69Device.SetDioPinMapping(dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceivePayloadReady);
 
 			Debug.WriteLine("{0:HH:mm:ss.fff} Transmit-Done", DateTime.Now);
 
