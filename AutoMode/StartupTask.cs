@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright ® 2019 July devMobile Software, All Rights Reserved
+    Copyright ® 2019 October devMobile Software, All Rights Reserved
 
 	 MIT License
 
@@ -22,7 +22,7 @@
 	 SOFTWARE
 
  */
-namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
+namespace devMobile.IoT.Rfm69Hcw.AutoMode
 {
 	using System;
 	using System.Diagnostics;
@@ -454,6 +454,23 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 		// DIO 2 Bits 3&2 of RegDioMapping1
 		public enum Dio2Mapping
 		{
+			SleepFifoNotEmpty = 0b00000000,
+			// Reserved 01,10
+			SleepAutoMode = 0b00001100,
+			StandByFifoNotEmpty = 0b00000000,
+			// Reserved 01,10
+			StandByAutoMode = 0b00001100,
+			FrequencySynthesisFifoNotEmpty = 0b00000000,
+			// Reserved 01,10
+			FrequencySynthesisAutoMode = 0b00001100,
+			ReceiveFifoNotEmpty = 0b00000000,
+			ReceiveData = 0b00000100,
+			// 10 Reserved
+			ReceiveAutoMode = 0b00001100,
+			TransmitFifoNotEmpty = 0b00000000,
+			TransmitData = 0b00000100,
+			// 10 Reserved
+			TransmitAutoMode = 0b00001100,
 		}
 		const Dio2Mapping Dio2MappingDefault = 0x00;
 
@@ -607,6 +624,41 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 		// RegBroadcastAdrs
 		const byte BroadcastAddressDefault = 0x0;
+
+		// RegAutoModes bits 7-5
+		public enum AutoModeEnter
+		{
+			off = 0b00000000,
+			RisingEdgeFifoNotEmpty  = 0b00100000,
+			RisingEdgeFifoLevel     = 0b01000000,
+			RisingEdgeCrcOk         = 0b01100000,
+			RisingEdgePayloadReady  = 0b10000000,
+			RisingEdgeSyncAddress   = 0b10100000,
+			RisingEdgePacketSent    = 0b11000000,
+			FallingEdgeFifoNotEmpty = 0b11100000
+		}
+
+		// RegAutoModes Bits 4-2 
+		public enum AutoModeExit
+		{
+			off = 0b00000000,
+			FallingEdgeFifoNotEmpty         = 0b00000100,
+			RisingEdgeFifoLevelOrTimeout    = 0b00001000,
+			RisingEdgeCrcOkOrTimeout        = 0b00001100,
+			RisingEdgePayloadReadyOrTimeout = 0b00010000,
+			RisingEdgeSyncAddressOrTimeout  = 0b00010100,
+			RisingEdgePacketSent            = 0b00011000,
+			RisingEdgeOfTimeout             = 0b00011100
+		}
+
+		// RegAutoModes bits 1-0
+		public enum AutoModeIntermediate
+		{
+			Sleep       = 0b00000000,
+			StandBy     = 0b00000001,
+			Receiver    = 0b00000010,
+			Transmitter = 0b00000011
+		}
 
 		// RegFifoThresh
 		[Flags]
@@ -775,7 +827,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			AddressingEnabled = (addressNode.HasValue || addressbroadcast.HasValue);
 			AesEnabled = (aesKey != null);
 
-#region RegSyncConfig + RegSyncValue1 to RegSyncValue8 guard conditions
+			#region RegSyncConfig + RegSyncValue1 to RegSyncValue8 guard conditions
 			if (syncValues != null)
 			{
 				// If sync enabled (i.e. SyncValues array provided) check that SyncValues not to short/long and SyncTolerance not to small/big
@@ -804,9 +856,9 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 					throw new ArgumentException($"If Sync not enabled SyncTolerance is not supported", "syncTolerance");
 				}
 			}
-#endregion
+			#endregion
 
-#region RegPacketConfig2 + RegAesKey1 to RegAesKey16 guard conditions
+			#region RegPacketConfig2 + RegAesKey1 to RegAesKey16 guard conditions
 			if ((interPacketRxDelay < InterPacketRxDelayMinimum) || (interPacketRxDelay > InterPacketRxDelayMaximum))
 			{
 				throw new ArgumentException($"The interPacketRxDelay must be between {InterPacketRxDelayMinimum} and {InterPacketRxDelayMaximum}", "interPacketRxDelay");
@@ -815,11 +867,11 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			{
 				throw new ArgumentException($"The AES key must be {AesKeyLength} bytes", "aesKey");
 			}
-#endregion
+			#endregion
 
 			// Strobe Reset pin briefly to factory reset SX1231 chip
 			ResetGpioPin.Write(GpioPinValue.High);
-			Task.Delay(100);
+			Task.Delay(1);
 			ResetGpioPin.Write(GpioPinValue.Low);
 			Task.Delay(10);
 
@@ -1156,9 +1208,9 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			byte? address = null;
 			byte[] messageBytes;
 
-			lock (Rfm9XRegFifoLock)
+//			lock (Rfm9XRegFifoLock)
 			{
-				//SetMode(RegOpModeMode.StandBy);
+//				SetMode(RegOpModeMode.StandBy);
 
 				crcValid = ((irqFlags2 & RegIrqFlags2.CrcOk) == RegIrqFlags2.CrcOk);
 
@@ -1181,8 +1233,13 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 					numberOfBytes--;
 				}
 
-				// Read characters from the Fifo
-				messageBytes = RegisterManager.Read((byte)Rfm69HcwDevice.Registers.RegFifo, numberOfBytes);
+				// Allocate a buffer for the payload and read characters from the Fifo
+				messageBytes = new byte[numberOfBytes];
+
+				for (int i = 0; i < numberOfBytes; i++)
+				{
+					messageBytes[i] = RegisterManager.ReadByte((byte)Rfm69HcwDevice.Registers.RegFifo);
+				}
 			}
 
 			if (this.OnReceive != null)
@@ -1223,15 +1280,20 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			}
 			InterruptProccessing = true;
 
-			RegIrqFlags2 irqFlags2 = (RegIrqFlags2)RegisterManager.ReadByte((byte)Registers.RegIrqFlags2);
-
 			SetMode(RegOpModeMode.StandBy);
 			while ((RegisterManager.ReadByte(0x27) & 0x80) == 0)
 			{
-				Debug.Write("+I");
+				Debug.Write("+");
 			}
 
-			if ((irqFlags2 & RegIrqFlags2.PayloadReady) == RegIrqFlags2.PayloadReady)
+			RegIrqFlags2 irqFlags2 = (RegIrqFlags2)RegisterManager.ReadByte((byte)Registers.RegIrqFlags2);
+			RegIrqFlags1 irqFlags1 = (RegIrqFlags1)RegisterManager.ReadByte((byte)Registers.RegIrqFlags1);
+
+			Debug.WriteLine($"irqFlags1:{irqFlags1}");
+			Debug.WriteLine($"irqFlags2:{irqFlags2}");
+
+			//if ((irqFlags2 & RegIrqFlags2.PayloadReady) == RegIrqFlags2.PayloadReady)
+			if ((irqFlags2 & RegIrqFlags2.FifoNotEmpty) == RegIrqFlags2.FifoNotEmpty)
 			{
 				ProcessPayloadReady(irqFlags2);
 			}
@@ -1302,7 +1364,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 		public void SendMessage(byte[] messageBytes)
 		{
-#region Guard conditions
+			#region Guard conditions
 			if (AddressingEnabled)
 			{
 				throw new ApplicationException("Addressed message mode enabled");
@@ -1325,16 +1387,23 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			#endregion
 
 			SetMode(RegOpModeMode.StandBy);
-			SetDioPinMapping(dio0Mapping: Dio0Mapping.TransmitPacketSent);
-
-			lock (Rfm9XRegFifoLock)
+			while ((RegisterManager.ReadByte(0x27) & 0x80) == 0)
 			{
+				Debug.Write("+");
+			}
+
+//			lock (Rfm9XRegFifoLock)
+			{
+
 				if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 				{
 					RegisterManager.WriteByte((byte)Registers.RegFifo, (byte)messageBytes.Length);
 				}
 
-				this.RegisterManager.Write((byte)Registers.RegFifo, messageBytes);
+				foreach (byte b in messageBytes)
+				{
+					this.RegisterManager.WriteByte((byte)Registers.RegFifo, b);
+				}
 			}
 
 			SetMode(RegOpModeMode.Transmit);
@@ -1364,15 +1433,17 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			}
 			#endregion
 
-			SetMode(RegOpModeMode.StandBy);
-			while ((RegisterManager.ReadByte(0x27) & 0x80) == 0)
+//			lock (Rfm9XRegFifoLock)
 			{
-				Debug.Write("+I");
-			}
-			SetDioPinMapping(dio0Mapping: Dio0Mapping.TransmitPacketSent);
+				SetMode(RegOpModeMode.StandBy);
+				while ((RegisterManager.ReadByte(0x27) & 0x80) == 0)
+				{
+					Debug.Write("+");
+				}
 
-			lock (Rfm9XRegFifoLock)
-			{
+				this.SetAutoMode(AutoModeEnter.RisingEdgeFifoLevel, AutoModeIntermediate.Transmitter, AutoModeExit.RisingEdgePacketSent);
+				//this.SetAutoMode(AutoModeEnter.off, AutoModeIntermediate.Transmitter, AutoModeExit.RisingEdgePacketSent);
+
 				if (PacketFormat == RegPacketConfig1PacketFormat.VariableLength)
 				{
 					RegisterManager.WriteByte((byte)Registers.RegFifo, (byte)(messageBytes.Length + 1)); // Additional byte for address 
@@ -1380,9 +1451,13 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 				RegisterManager.WriteByte((byte)Registers.RegFifo, address);
 
-				this.RegisterManager.Write((byte)Registers.RegFifo, messageBytes);
+				foreach (byte b in messageBytes)
+				{
+					this.RegisterManager.WriteByte((byte)Registers.RegFifo, b);
+				}
+
+				//SetMode(RegOpModeMode.Transmit);
 			}
-			SetMode(RegOpModeMode.Transmit);
 		}
 
 		public short Rssi(bool forceTrigger)
@@ -1393,10 +1468,10 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			if (forceTrigger)
 			{
 				// RSSI trigger not needed if DAGC is in continuous mode
-				if (((AfcLowBeta)RegisterManager.ReadByte((byte)Registers.RegTestDagc) & AfcLowBeta.Improved) == 0x00)  
+				if (((AfcLowBeta)RegisterManager.ReadByte((byte)Registers.RegTestDagc) & AfcLowBeta.Improved) == 0x00)
 				{
 					RegisterManager.WriteByte((byte)Registers.RegRssiConfig, (byte)RssiConfig.RssiStart);
-					while(((RssiConfig)RegisterManager.ReadByte((byte)Registers.RegRssiConfig) & RssiConfig.RssiDone) == 0x00)
+					while (((RssiConfig)RegisterManager.ReadByte((byte)Registers.RegRssiConfig) & RssiConfig.RssiDone) == 0x00)
 					{
 						Debug.Write('?');
 					}
@@ -1409,13 +1484,24 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 			return rssi;
 		}
+
+		public void SetAutoMode(AutoModeEnter enter, AutoModeIntermediate intermediate, AutoModeExit exit)
+		{
+			Byte value = (byte)enter;
+
+			value |= (byte)intermediate;
+			value |= (byte)exit;
+
+			RegisterManager.WriteByte((Byte)Registers.RegAutoModes, value);
+		}
 	}
 
 
 	public sealed class StartupTask : IBackgroundTask
 	{
 		private const int ResetPin = 25;
-		private const int InterruptPin = 22;
+		private const int InterruptPin = 22;  // DOO0
+		//private const int InterruptPin = 24; // DIO3
 		private Rfm69HcwDevice rfm69Device = new Rfm69HcwDevice(ChipSelectPin.CS1, ResetPin, InterruptPin);
 		DateTime LastEvent = DateTime.Now;
 
@@ -1427,15 +1513,22 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 			try
 			{
 				rfm69Device.Initialise(Rfm69HcwDevice.RegOpModeMode.StandBy
-												,frequency: 909560000.0 
-												,dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceivePayloadReady
-												,preambleSize: 16												
-												,syncValues: syncValues
-												,packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength
-												,packetDcFree: Rfm69HcwDevice.RegPacketConfig1DcFree.Whitening
-												,autoRestartRx: false
-												//,addressNode: 0x22
-												//,addressbroadcast: 0x99
+												, frequency: 909560000.0
+												,sequencer: true
+												//, dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceiveCrcOk
+												//, dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceivePayloadReady
+												//, dio0Mapping: Rfm69HcwDevice.Dio0Mapping.TransmitPacketSent
+												//, dio2Mapping: Rfm69HcwDevice.Dio2Mapping.TransmitAutoMode
+												, dio2Mapping: Rfm69HcwDevice.Dio2Mapping.ReceiveAutoMode
+												, preambleSize: 16
+												, syncValues: syncValues
+												, packetFormat: Rfm69HcwDevice.RegPacketConfig1PacketFormat.VariableLength
+												, packetDcFree: Rfm69HcwDevice.RegPacketConfig1DcFree.Whitening
+												//, autoRestartRx: true
+												,addressNode: 0x22
+												,addressbroadcast: 0x99
+												//,fifoThreshold:0
+												//,txStartCondition: Rfm69HcwDevice.TxStartCondition.FifoNotEmpty
 												//,aesKey: aesKeyValues
 												);
 
@@ -1446,9 +1539,12 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 
 				rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
 
+				rfm69Device.SetAutoMode(Rfm69HcwDevice.AutoModeEnter.RisingEdgePayloadReady, 
+						Rfm69HcwDevice.AutoModeIntermediate.StandBy, 
+						Rfm69HcwDevice.AutoModeExit.FallingEdgeFifoNotEmpty);
 
 				while (true)
-				{
+				{ 
 					if (true)
 					{
 						string message = $"hello world {Environment.MachineName} {DateTime.Now:hh-mm-ss}";
@@ -1456,7 +1552,7 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 						byte[] messageBuffer = UTF8Encoding.UTF8.GetBytes(message);
 
 						Debug.WriteLine("{0:HH:mm:ss.fff} Send-{1}", DateTime.Now, message);
-						rfm69Device.SendMessage( 0x11, messageBuffer);
+						rfm69Device.SendMessage(0x11, messageBuffer);
 						//rfm69Device.SendMessage(messageBuffer);
 
 						Debug.WriteLine("{0:HH:mm:ss.fff} Send-Done", DateTime.Now);
@@ -1480,8 +1576,11 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 		{
 			DateTime currentEvent = DateTime.Now;
 
-			this.rfm69Device.SetDioPinMapping(dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceivePayloadReady);
 			this.rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
+
+			rfm69Device.SetAutoMode(Rfm69HcwDevice.AutoModeEnter.RisingEdgePayloadReady,
+						Rfm69HcwDevice.AutoModeIntermediate.StandBy,
+						Rfm69HcwDevice.AutoModeExit.FallingEdgeFifoNotEmpty);
 
 			try
 			{
@@ -1511,8 +1610,11 @@ namespace devMobile.IoT.Rfm69Hcw.ReceiveTransmitEvents
 		{
 			DateTime currentEvent = DateTime.Now;
 
-			rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
-			rfm69Device.SetDioPinMapping(dio0Mapping: Rfm69HcwDevice.Dio0Mapping.ReceivePayloadReady);
+			this.rfm69Device.SetMode(Rfm69HcwDevice.RegOpModeMode.Receive);
+
+			rfm69Device.SetAutoMode(Rfm69HcwDevice.AutoModeEnter.RisingEdgePayloadReady,
+						Rfm69HcwDevice.AutoModeIntermediate.StandBy,
+						Rfm69HcwDevice.AutoModeExit.FallingEdgeFifoNotEmpty);
 
 			Debug.WriteLine("{0:HH:mm:ss.fff} Transmit-Done", DateTime.Now);
 
